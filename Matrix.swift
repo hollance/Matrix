@@ -290,16 +290,18 @@ extension Matrix {
     precondition(rows == columns, "Matrix must be square")
     
     var results = self
-    var ipiv = [__CLPK_integer](count: rows * rows, repeatedValue: 0)
-    var lwork = __CLPK_integer(columns * columns)
-    var work = [CDouble](count: Int(lwork), repeatedValue: 0.0)
-    var error: __CLPK_integer = 0
-    var nc = __CLPK_integer(columns)
-
-    dgetrf_(&nc, &nc, &(results.grid), &nc, &ipiv, &error)
-    dgetri_(&nc, &(results.grid), &nc, &ipiv, &work, &lwork, &error)
-
-    assert(error == 0, "Matrix not invertible")
+    results.grid.withUnsafeMutableBufferPointer { ptr in
+      var ipiv = [__CLPK_integer](count: rows * rows, repeatedValue: 0)
+      var lwork = __CLPK_integer(columns * columns)
+      var work = [CDouble](count: Int(lwork), repeatedValue: 0)
+      var error: __CLPK_integer = 0
+      var nc = __CLPK_integer(columns)
+      
+      dgetrf_(&nc, &nc, ptr.baseAddress, &nc, &ipiv, &error)
+      dgetri_(&nc, ptr.baseAddress, &nc, &ipiv, &work, &lwork, &error)
+      
+      assert(error == 0, "Matrix not invertible")
+    }
     return results
   }
 }
