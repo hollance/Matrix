@@ -328,7 +328,11 @@ public func + (lhs: Matrix, rhs: Matrix) -> Matrix {
   precondition(lhs.rows == rhs.rows && lhs.columns == rhs.columns, "Cannot add \(lhs.rows)×\(lhs.columns) matrix and \(rhs.rows)×\(rhs.columns) matrix")
 
   var results = rhs
-  cblas_daxpy(Int32(lhs.grid.count), 1.0, lhs.grid, 1, &(results.grid), 1)
+  lhs.grid.withUnsafeBufferPointer { lhsPtr in
+    results.grid.withUnsafeMutableBufferPointer { resultsPtr in
+      cblas_daxpy(Int32(lhs.grid.count), 1, lhsPtr.baseAddress, 1, resultsPtr.baseAddress, 1)
+    }
+  }
   return results
 }
 
@@ -357,7 +361,11 @@ public func - (lhs: Matrix, rhs: Matrix) -> Matrix {
   precondition(lhs.rows == rhs.rows && lhs.columns == rhs.columns, "Cannot subtract \(lhs.rows)×\(lhs.columns) matrix and \(rhs.rows)×\(rhs.columns) matrix")
   
   var results = lhs
-  cblas_daxpy(Int32(rhs.grid.count), -1.0, rhs.grid, 1, &(results.grid), 1)
+  rhs.grid.withUnsafeBufferPointer { rhsPtr in
+    results.grid.withUnsafeMutableBufferPointer { resultsPtr in
+      cblas_daxpy(Int32(rhs.grid.count), -1, rhsPtr.baseAddress, 1, resultsPtr.baseAddress, 1)
+    }
+  }
   return results
 }
 
@@ -435,14 +443,22 @@ public func * (lhs: Matrix, rhs: Matrix) -> Matrix {
   precondition(lhs.columns == rhs.rows, "Cannot multiply \(lhs.rows)×\(lhs.columns) matrix and \(rhs.rows)×\(rhs.columns) matrix")
 
   var results = Matrix(rows: lhs.rows, columns: rhs.columns, repeatedValue: 0)
-  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, Int32(lhs.rows), Int32(rhs.columns), Int32(lhs.columns), 1, lhs.grid, Int32(lhs.columns), rhs.grid, Int32(rhs.columns), 0, &(results.grid), Int32(results.columns))
+  lhs.grid.withUnsafeBufferPointer { lhsPtr in
+    rhs.grid.withUnsafeBufferPointer { rhsPtr in
+      results.grid.withUnsafeMutableBufferPointer { resultsPtr in
+        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, Int32(lhs.rows), Int32(rhs.columns), Int32(lhs.columns), 1, lhsPtr.baseAddress, Int32(lhs.columns), rhsPtr.baseAddress, Int32(rhs.columns), 0, resultsPtr.baseAddress, Int32(results.columns))
+      }
+    }
+  }
   return results
 }
 
 /* Multiplies each element of the matrix with a scalar. */
 public func * (lhs: Matrix, rhs: Double) -> Matrix {
   var results = lhs
-  cblas_dscal(Int32(lhs.grid.count), rhs, &(results.grid), 1)
+  results.grid.withUnsafeMutableBufferPointer { ptr in
+    cblas_dscal(Int32(lhs.grid.count), rhs, ptr.baseAddress, 1)
+  }
   return results
 }
 
@@ -461,7 +477,9 @@ public func / (lhs: Matrix, rhs: Matrix) -> Matrix {
 /* Divides each element of the matrix by a scalar. */
 public func / (lhs: Matrix, rhs: Double) -> Matrix {
   var results = lhs
-  cblas_dscal(Int32(lhs.grid.count), 1/rhs, &(results.grid), 1)
+  results.grid.withUnsafeMutableBufferPointer { ptr in
+    cblas_dscal(Int32(lhs.grid.count), 1/rhs, ptr.baseAddress, 1)
+  }
   return results
 }
 

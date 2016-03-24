@@ -277,7 +277,7 @@ extension MatrixTests {
     let o = inv(i)
     assertEqual(m, o)
 
-    // make sure accellerate framework magic didn't overwrite the original
+    // make sure accelerate framework magic didn't overwrite the original
     assertEqual(m, M)
   }
 
