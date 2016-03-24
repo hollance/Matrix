@@ -43,6 +43,9 @@ TODO:
 - !* equivalent of !/
 - !+ equivalent of !-
 
+- mean(), std(): I made it so these don't modify the matrix. Was that an optimization
+  or did I need that for the particular algorithm?
+
 - make faster!
   - ContiguousArray?
   - benchmark all these versions against one set of test data

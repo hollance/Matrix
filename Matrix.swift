@@ -404,31 +404,18 @@ public func !- (lhs: Matrix, rhs: Matrix) -> Matrix {
   */
 
   var results = Matrix.zeros(size: lhs.size)
-  
-  lhs.grid.withUnsafeBufferPointer{ srcbuf in
-    results.grid.withUnsafeMutableBufferPointer{ dstbuf in
-
-      var src = srcbuf.baseAddress
-      var dst = dstbuf.baseAddress
-  
+  lhs.grid.withUnsafeBufferPointer{ srcBuf in
+    results.grid.withUnsafeMutableBufferPointer{ dstBuf in
+      var srcPtr = srcBuf.baseAddress
+      var dstPtr = dstBuf.baseAddress
       for c in 0..<lhs.columns {
         var v = -rhs[c]
-        vDSP_vsaddD(src, lhs.columns, &v, dst, lhs.columns, vDSP_Length(lhs.rows))
-        src = src.advancedBy(1)
-        dst = dst.advancedBy(1)
+        vDSP_vsaddD(srcPtr, lhs.columns, &v, dstPtr, lhs.columns, vDSP_Length(lhs.rows))
+        srcPtr += 1
+        dstPtr += 1
       }
     }
   }
-  
-//  let results = Matrix.zeros(size: lhs.size)
-//  var src = UnsafePointer<Double>(lhs.grid)
-//  var dst = UnsafeMutablePointer<Double>(results.grid)
-//  for c in 0..<lhs.columns {
-//    var v = -rhs[c]
-//    vDSP_vsaddD(src, lhs.columns, &v, dst, lhs.columns, vDSP_Length(lhs.rows))
-//    src = src.advancedBy(1)
-//    dst = dst.advancedBy(1)
-//  }
   return results
 }
 
@@ -509,16 +496,19 @@ public func !/ (lhs: Matrix, rhs: Matrix) -> Matrix {
   return results
   */
 
-  let results = Matrix.zeros(size: lhs.size)
-  var src = UnsafePointer<Double>(lhs.grid)
-  var dst = UnsafeMutablePointer<Double>(results.grid)
-  for c in 0..<lhs.columns {
-    var v = rhs[c]
-    vDSP_vsdivD(src, lhs.columns, &v, dst, lhs.columns, vDSP_Length(lhs.rows))
-    src = src.advancedBy(1)
-    dst = dst.advancedBy(1)
+  var results = Matrix.zeros(size: lhs.size)
+  lhs.grid.withUnsafeBufferPointer{ srcBuf in
+    results.grid.withUnsafeMutableBufferPointer{ dstBuf in
+      var srcPtr = srcBuf.baseAddress
+      var dstPtr = dstBuf.baseAddress
+      for c in 0..<lhs.columns {
+        var v = rhs[c]
+        vDSP_vsdivD(srcPtr, lhs.columns, &v, dstPtr, lhs.columns, vDSP_Length(lhs.rows))
+        srcPtr += 1
+        dstPtr += 1
+      }
+    }
   }
-
   return results
 }
 
@@ -744,25 +734,19 @@ extension Matrix {
     return mu
     */
 
-    let mu = Matrix.zeros(rows: 1, columns: columns)
-    var src = UnsafePointer<Double>(grid).advancedBy(range.startIndex)
-    var dst = UnsafeMutablePointer<Double>(mu.grid).advancedBy(range.startIndex)
-    for _ in range {
-      vDSP_meanvD(src, columns, dst, vDSP_Length(rows))
-      src = src.advancedBy(1)
-      dst = dst.advancedBy(1)
-    }
-    return mu
-
-    // This looks like it should work, but it gives the wrong results.
-    /*
-    var source = grid  // needed for &, but doesn't actually copy the data
     var mu = Matrix.zeros(rows: 1, columns: columns)
-    for c in 0..<columns {
-      vDSP_meanvD(&source[c], columns, &mu.grid[c], vDSP_Length(rows))
+    grid.withUnsafeBufferPointer{ srcBuf in
+      mu.grid.withUnsafeMutableBufferPointer{ dstBuf in
+        var srcPtr = srcBuf.baseAddress + range.startIndex
+        var dstPtr = dstBuf.baseAddress + range.startIndex
+        for _ in range {
+          vDSP_meanvD(srcPtr, columns, dstPtr, vDSP_Length(rows))
+          srcPtr += 1
+          dstPtr += 1
+        }
+      }
     }
     return mu
-    */
   }
 
   /* Calculates the standard deviation for each of the matrix's columns. */
@@ -795,26 +779,35 @@ extension Matrix {
     */
 
     var sigma = Matrix.zeros(rows: 1, columns: columns)
-    let temp = Matrix.zeros(rows: rows, columns: columns)
+    var temp = Matrix.zeros(rows: rows, columns: columns)
 
-    var ptr1 = UnsafePointer<Double>(grid).advancedBy(range.startIndex)
-    var ptr2 = UnsafeMutablePointer<Double>(temp.grid).advancedBy(range.startIndex)
-    var ptr3 = UnsafeMutablePointer<Double>(sigma.grid).advancedBy(range.startIndex)
+    grid.withUnsafeBufferPointer{ buf1 in
+      temp.grid.withUnsafeMutableBufferPointer{ buf2 in
+        sigma.grid.withUnsafeMutableBufferPointer{ buf3 in
+          var ptr1 = buf1.baseAddress + range.startIndex
+          var ptr2 = buf2.baseAddress + range.startIndex
+          var ptr3 = buf3.baseAddress + range.startIndex
+          
+          for c in range {
+            var v = -mu[c]
+            vDSP_vsaddD(ptr1, columns, &v, ptr2, columns, vDSP_Length(rows))
+            vDSP_vsqD(ptr2, columns, ptr2, columns, vDSP_Length(rows))
+            vDSP_sveD(ptr2, columns, ptr3, vDSP_Length(rows))
+            
+            ptr1 += 1
+            ptr2 += 1
+            ptr3 += 1
+          }
+        }
+      }
+    }
 
+    // Note: we cannot access sigma[] inside the withUnsafeMutableBufferPointer
+    // block, so we do it afterwards.
     for c in range {
-      var v = -mu[c]
-      vDSP_vsaddD(ptr1, columns, &v, ptr2, columns, vDSP_Length(rows))
-      vDSP_vsqD(ptr2, columns, ptr2, columns, vDSP_Length(rows))
-      vDSP_sveD(ptr2, columns, ptr3, vDSP_Length(rows))
-
-      ptr1 = ptr1.advancedBy(1)
-      ptr2 = ptr2.advancedBy(1)
-      ptr3 = ptr3.advancedBy(1)
-
       sigma[0, c] /= Double(rows) - 1   // sample stddev, not population
       sigma[0, c] = sqrt(sigma[0, c])
     }
-
     return sigma
   }
 }
