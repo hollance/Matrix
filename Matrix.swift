@@ -313,7 +313,11 @@ public func inv(m: Matrix) -> Matrix {
 extension Matrix {
   public func transpose() -> Matrix {
     var results = Matrix(rows: columns, columns: rows, repeatedValue: 0)
-    vDSP_mtransD(grid, 1, &(results.grid), 1, vDSP_Length(results.rows), vDSP_Length(results.columns))
+    grid.withUnsafeBufferPointer { srcPtr in
+      results.grid.withUnsafeMutableBufferPointer { dstPtr in
+        vDSP_mtransD(srcPtr.baseAddress, 1, dstPtr.baseAddress, 1, vDSP_Length(results.rows), vDSP_Length(results.columns))
+      }
+    }
     return results
   }
 }
