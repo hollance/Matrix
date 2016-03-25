@@ -17,7 +17,7 @@
 		7B2BBC941C779E7B0067B71D /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = SOURCE_ROOT; };
 		7B80C3D91C77A323003CECC7 /* MatrixTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MatrixTests.swift; sourceTree = SOURCE_ROOT; };
 		7B9945061CA2FCE70081DE14 /* Matrix.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Matrix.swift; sourceTree = SOURCE_ROOT; };
-		7B9945081CA2FD1E0081DE14 /* README.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README.txt; sourceTree = SOURCE_ROOT; };
+		7B9945081CA2FD1E0081DE14 /* README.markdown */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.markdown; sourceTree = SOURCE_ROOT; };
 		7B99450C1CA407CA0081DE14 /* PerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -55,7 +55,7 @@
 				7B9945061CA2FCE70081DE14 /* Matrix.swift */,
 				7B80C3D91C77A323003CECC7 /* MatrixTests.swift */,
 				7B99450C1CA407CA0081DE14 /* PerformanceTests.swift */,
-				7B9945081CA2FD1E0081DE14 /* README.txt */,
+				7B9945081CA2FD1E0081DE14 /* README.markdown */,
 			);
 			name = Tests;
 			path = TestsTests;

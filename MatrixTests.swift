@@ -455,7 +455,6 @@ extension MatrixTests {
     assertEqual(a !/ b, c)
     assertEqual(a, A)
     assertEqual(b, B)
-    print(A)
   }
 }
 
