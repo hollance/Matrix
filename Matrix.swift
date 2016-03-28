@@ -830,22 +830,20 @@ extension Matrix {
     return (result, Int(index))
   }
 
-  public func minmax(row r: Int) -> ((Double, Int), (Double, Int)) {
-    var maxResult = self[r, 0]
-    var minResult = self[r, 0]
-    var maxIndex = 0
-    var minIndex = 0
-    for c in 1..<columns {
-      if self[r, c] > maxResult {
-        maxResult = self[r, c]
-        maxIndex = c
-      }
-      if self[r, c] < minResult {
-        minResult = self[r, c]
-        minIndex = c
-      }
+  public func minRows() -> Matrix {
+    var mins = Matrix.zeros(rows: rows, columns: 1)
+    for r in 0..<rows {
+      mins[r] = min(row: r).0
     }
-    return ((minResult, minIndex), (maxResult, maxIndex))
+    return mins
+  }
+
+  public func maxRows() -> Matrix {
+    var maxs = Matrix.zeros(rows: rows, columns: 1)
+    for r in 0..<rows {
+      maxs[r] = max(row: r).0
+    }
+    return maxs
   }
 
   public func min(column c: Int) -> (Double, Int) {
@@ -890,24 +888,6 @@ extension Matrix {
     return (result, Int(index) / columns)
   }
 
-  public func minmax(column c: Int) -> ((Double, Int), (Double, Int)) {
-    var maxResult = self[0, c]
-    var minResult = self[0, c]
-    var maxIndex = 0
-    var minIndex = 0
-    for r in 1..<rows {
-      if self[r, c] > maxResult {
-        maxResult = self[r, c]
-        maxIndex = r
-      }
-      if self[r, c] < minResult {
-        minResult = self[r, c]
-        minIndex = r
-      }
-    }
-    return ((minResult, minIndex), (maxResult, maxIndex))
-  }
-  
   public func minColumns() -> Matrix {
     var mins = Matrix.zeros(rows: 1, columns: columns)
     for c in 0..<columns {
@@ -924,15 +904,26 @@ extension Matrix {
     return maxs
   }
 
-  public func minmaxColumns() -> (Matrix, Matrix) {
-    var mins = Matrix.zeros(rows: 1, columns: columns)
-    var maxs = Matrix.zeros(rows: 1, columns: columns)
-    for c in 0..<columns {
-      let r = minmax(column: c)
-      mins[c] = r.0.0
-      maxs[c] = r.1.0
+  public func min() -> (Double, Int, Int) {
+    var result = 0.0
+    var index: vDSP_Length = 0
+    grid.withUnsafeBufferPointer { ptr in
+      vDSP_minviD(ptr.baseAddress, 1, &result, &index, vDSP_Length(rows * columns))
     }
-    return (mins, maxs)
+    let r = Int(index) / rows
+    let c = Int(index) - r * columns
+    return (result, r, c)
+  }
+
+  public func max() -> (Double, Int, Int) {
+    var result = 0.0
+    var index: vDSP_Length = 0
+    grid.withUnsafeBufferPointer { ptr in
+      vDSP_maxviD(ptr.baseAddress, 1, &result, &index, vDSP_Length(rows * columns))
+    }
+    let r = Int(index) / rows
+    let c = Int(index) - r * columns
+    return (result, r, c)
   }
 }
 
@@ -946,9 +937,9 @@ extension Matrix {
 
   /* 
     Calculates the mean for some of the matrix's columns.
-    
-    TODO: I am not sure why this returns a matrix of the original size instead
-    of a smaller one.
+
+    Note: This returns a matrix of the same size as the original one. 
+    Any columns not in the range are set to 0.
   */
   public func mean(range: Range<Int>) -> Matrix {
     /*
@@ -987,8 +978,8 @@ extension Matrix {
   /* 
     Calculates the standard deviation for some of the matrix's columns.
       
-    TODO: I am not sure why this returns a matrix of the original size instead
-    of a smaller one.
+    Note: This returns a matrix of the same size as the original one. 
+    Any columns not in the range are set to 0.
   */
   public func std(range: Range<Int>) -> Matrix {
     let mu = mean(range)

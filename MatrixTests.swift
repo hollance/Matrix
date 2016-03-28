@@ -601,31 +601,22 @@ extension MatrixTests {
     assertEqual(a, A)
   }
 
-  func testMinMaxRow() {
+  func testMinRows() {
     let a = Matrix([[19, 7, 21], [3, 40, 15], [5, 4, -1]])
+    let b = Matrix([7, 3, -1], isColumnVector: true)
     let A = copy(a)
-
-    let r0 = a.minmax(row: 0)
-    XCTAssertEqual(r0.0.0, 7)
-    XCTAssertEqual(r0.0.1, 1)
-    XCTAssertEqual(r0.1.0, 21)
-    XCTAssertEqual(r0.1.1, 2)
-
-    let r1 = a.minmax(row: 1)
-    XCTAssertEqual(r1.0.0, 3)
-    XCTAssertEqual(r1.0.1, 0)
-    XCTAssertEqual(r1.1.0, 40)
-    XCTAssertEqual(r1.1.1, 1)
-
-    let r2 = a.minmax(row: 2)
-    XCTAssertEqual(r2.0.0, -1)
-    XCTAssertEqual(r2.0.1, 2)
-    XCTAssertEqual(r2.1.0, 5)
-    XCTAssertEqual(r2.1.1, 0)
-
+    assertEqual(a.minRows(), b)
     assertEqual(a, A)
   }
-  
+
+  func testMaxRows() {
+    let a = Matrix([[19, 7, 21], [3, 40, 15], [5, 4, -1]])
+    let b = Matrix([21, 40, 5], isColumnVector: true)
+    let A = copy(a)
+    assertEqual(a.maxRows(), b)
+    assertEqual(a, A)
+  }
+
   func testMinColumn() {
     let a = Matrix([[19, 7, -1], [3, 40, 15], [5, 4, 21]])
     let A = copy(a)
@@ -664,31 +655,6 @@ extension MatrixTests {
     assertEqual(a, A)
   }
 
-  func testMinMaxColumn() {
-    let a = Matrix([[19, 7, -1], [3, 40, 15], [5, 4, 21]])
-    let A = copy(a)
-
-    let r0 = a.minmax(column: 0)
-    XCTAssertEqual(r0.0.0, 3)
-    XCTAssertEqual(r0.0.1, 1)
-    XCTAssertEqual(r0.1.0, 19)
-    XCTAssertEqual(r0.1.1, 0)
-
-    let r1 = a.minmax(column: 1)
-    XCTAssertEqual(r1.0.0, 4)
-    XCTAssertEqual(r1.0.1, 2)
-    XCTAssertEqual(r1.1.0, 40)
-    XCTAssertEqual(r1.1.1, 1)
-
-    let r2 = a.minmax(column: 2)
-    XCTAssertEqual(r2.0.0, -1)
-    XCTAssertEqual(r2.0.1, 0)
-    XCTAssertEqual(r2.1.0, 21)
-    XCTAssertEqual(r2.1.1, 2)
-  
-    assertEqual(a, A)
-  }
-  
   func testMinColumns() {
     let a = Matrix([[19, 7, -1], [3, 40, 15], [5, 4, 21]])
     let b = Matrix([3, 4, -1])
@@ -705,14 +671,23 @@ extension MatrixTests {
     assertEqual(a, A)
   }
 
-  func testMinMaxColumns() {
-    let a = Matrix([[19, 7, -1], [3, 40, 15], [5, 4, 21]])
-    let b = Matrix([3, 4, -1])
-    let c = Matrix([19, 40, 21])
+  func testMin() {
+    let a = Matrix([[19, 7, 15], [3, 40, -1], [5, 4, 21]])
     let A = copy(a)
-    let r = a.minmaxColumns()
-    assertEqual(r.0, b)
-    assertEqual(r.1, c)
+    let r = a.min()
+    XCTAssertEqual(r.0, -1)
+    XCTAssertEqual(r.1, 1)
+    XCTAssertEqual(r.2, 2)
+    assertEqual(a, A)
+  }
+
+  func testMax() {
+    let a = Matrix([[19, 7, -1], [3, 4, 15], [5, 40, 21]])
+    let A = copy(a)
+    let r = a.max()
+    XCTAssertEqual(r.0, 40)
+    XCTAssertEqual(r.1, 2)
+    XCTAssertEqual(r.2, 1)
     assertEqual(a, A)
   }
 }
