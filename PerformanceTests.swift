@@ -82,7 +82,7 @@ class PerformanceTests: XCTestCase {
     let M = Matrix.random(rows: 1000, columns: 1000)
     measureBlock() {
       for _ in 1...10 {
-        let _ = sqrt(M)
+        let _ = M.sqrt()
       }
     }
   }
@@ -90,14 +90,14 @@ class PerformanceTests: XCTestCase {
   func testPow2() {
     let M = Matrix.random(rows: 1000, columns: 1000)
     measureBlock() {
-      let _ = pow(M, 2)
+      let _ = M.pow(2)
     }
   }
 
   func testPow3() {
     let M = Matrix.random(rows: 1000, columns: 1000)
     measureBlock() {
-      let _ = pow(M, 3)
+      let _ = M.pow(3)
     }
   }
 }

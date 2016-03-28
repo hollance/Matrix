@@ -21,6 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+import Foundation
 import Accelerate
 
 public struct Matrix {
@@ -402,10 +403,6 @@ extension Matrix {
   }
 }
 
-public func inv(m: Matrix) -> Matrix {
-  return m.inverse()
-}
-
 extension Matrix {
   public func transpose() -> Matrix {
     var results = Matrix(rows: columns, columns: rows, repeatedValue: 0)
@@ -657,159 +654,161 @@ public func !/ (lhs: Matrix, rhs: Matrix) -> Matrix {
 
 // MARK: - Other maths
 
-/* Exponentiates each element of the matrix. */
-public func exp(m: Matrix) -> Matrix {
-  /*
-  var result = m
-  for r in 0..<m.rows {
-    for c in 0..<m.columns {
-      result[r, c] = exp(m[r, c])
-    }
-  }
-  return result
-  */
-  
-  var result = m
-  m.grid.withUnsafeBufferPointer { src in
-    result.grid.withUnsafeMutableBufferPointer { dst in
-      var size = Int32(m.rows * m.columns)
-      vvexp(dst.baseAddress, src.baseAddress, &size)
-    }
-  }
-  return result
-}
-
-/* Takes the natural logarithm of each element of the matrix. */
-public func log(m: Matrix) -> Matrix {
-  /*
-  var result = m
-  for r in 0..<m.rows {
-    for c in 0..<m.columns {
-      result[r, c] = log(m[r, c])
-    }
-  }
-  return result
-  */
-  
-  var result = m
-  m.grid.withUnsafeBufferPointer { src in
-    result.grid.withUnsafeMutableBufferPointer { dst in
-      var size = Int32(m.rows * m.columns)
-      vvlog(dst.baseAddress, src.baseAddress, &size)
-    }
-  }
-  return result
-}
-
-/* Raised each element of the matrix to power alpha. */
-public func pow(m: Matrix, _ alpha: Double) -> Matrix {
-  /*
-  var result = m
-  for r in 0..<m.rows {
-    for c in 0..<m.columns {
-      result[r, c] = pow(m[r, c], alpha)
-    }
-  }
-  return result
-  */
-  
-  var result = m
-  m.grid.withUnsafeBufferPointer { src in
-    result.grid.withUnsafeMutableBufferPointer { dst in
-      if alpha == 2 {
-        vDSP_vsqD(src.baseAddress, 1, dst.baseAddress, 1, vDSP_Length(m.rows * m.columns))
-      } else {
-        var size = Int32(m.rows * m.columns)
-        var exponent = alpha
-        vvpows(dst.baseAddress, &exponent, src.baseAddress, &size)
-      }
-    }
-  }
-  return result
-}
-
-/* Takes the square root of each element of the matrix. */
-public func sqrt(m: Matrix) -> Matrix {
-  /*
-  var result = m
-  for r in 0..<m.rows {
-    for c in 0..<m.columns {
-      result[r, c] = sqrt(m[r, c])
-    }
-  }
-  return result
-  */
-
-  var result = m
-  m.grid.withUnsafeBufferPointer { src in
-    result.grid.withUnsafeMutableBufferPointer { dst in
-      var size = Int32(m.rows * m.columns)
-      vvsqrt(dst.baseAddress, src.baseAddress, &size)
-    }
-  }
-  return result
-}
-
-/* Adds up all the elements in the matrix. */
-public func sum(m: Matrix) -> Double {
-  var result = 0.0
-
-  /*
-  for r in 0..<m.rows {
-    for c in 0..<m.columns {
-      result += m[r, c]
-    }
-  }
-  */
-  
-  m.grid.withUnsafeBufferPointer { src in
-    vDSP_sveD(src.baseAddress, 1, &result, vDSP_Length(m.rows * m.columns))
-  }
-  return result
-}
-
-/* Adds up the elements in each row. Returns a column vector. */
-public func sumRows(m: Matrix) -> Matrix {
-  var result = Matrix.zeros(rows: m.rows, columns: 1)
-  
-  /*
-  for r in 0..<m.rows {
-    for c in 0..<m.columns {
-      result[r] += m[r, c]
-    }
-  }
-  */
-  
-  m.grid.withUnsafeBufferPointer { src in
-    result.grid.withUnsafeMutableBufferPointer { dst in
-      for r in 0..<m.rows {
-        vDSP_sveD(src.baseAddress + r*m.columns, 1, dst.baseAddress + r, vDSP_Length(m.columns))
-      }
-    }
-  }
-  return result
-}
-
-/* Adds up the elements in each column. Returns a row vector. */
-public func sumColumns(m: Matrix) -> Matrix {
-  var result = Matrix.zeros(rows: 1, columns: m.columns)
-  
-  /*
-  for c in 0..<m.columns {
+extension Matrix {
+  /* Exponentiates each element of the matrix. */
+  public func exp() -> Matrix {
+    /*
+    var result = m
     for r in 0..<m.rows {
-      result[c] += m[r, c]
-    }
-  }
-  */
-  
-  m.grid.withUnsafeBufferPointer { src in
-    result.grid.withUnsafeMutableBufferPointer { dst in
       for c in 0..<m.columns {
-        vDSP_sveD(src.baseAddress + c, m.columns, dst.baseAddress + c, vDSP_Length(m.rows))
+        result[r, c] = exp(m[r, c])
       }
     }
+    return result
+    */
+    
+    var result = self
+    grid.withUnsafeBufferPointer { src in
+      result.grid.withUnsafeMutableBufferPointer { dst in
+        var size = Int32(rows * columns)
+        vvexp(dst.baseAddress, src.baseAddress, &size)
+      }
+    }
+    return result
   }
-  return result
+
+  /* Takes the natural logarithm of each element of the matrix. */
+  public func log() -> Matrix {
+    /*
+    var result = m
+    for r in 0..<m.rows {
+      for c in 0..<m.columns {
+        result[r, c] = log(m[r, c])
+      }
+    }
+    return result
+    */
+    
+    var result = self
+    grid.withUnsafeBufferPointer { src in
+      result.grid.withUnsafeMutableBufferPointer { dst in
+        var size = Int32(rows * columns)
+        vvlog(dst.baseAddress, src.baseAddress, &size)
+      }
+    }
+    return result
+  }
+
+  /* Raised each element of the matrix to power alpha. */
+  public func pow(alpha: Double) -> Matrix {
+    /*
+    var result = m
+    for r in 0..<m.rows {
+      for c in 0..<m.columns {
+        result[r, c] = pow(m[r, c], alpha)
+      }
+    }
+    return result
+    */
+    
+    var result = self
+    grid.withUnsafeBufferPointer { src in
+      result.grid.withUnsafeMutableBufferPointer { dst in
+        if alpha == 2 {
+          vDSP_vsqD(src.baseAddress, 1, dst.baseAddress, 1, vDSP_Length(rows * columns))
+        } else {
+          var size = Int32(rows * columns)
+          var exponent = alpha
+          vvpows(dst.baseAddress, &exponent, src.baseAddress, &size)
+        }
+      }
+    }
+    return result
+  }
+
+  /* Takes the square root of each element of the matrix. */
+  public func sqrt() -> Matrix {
+    /*
+    var result = m
+    for r in 0..<m.rows {
+      for c in 0..<m.columns {
+        result[r, c] = sqrt(m[r, c])
+      }
+    }
+    return result
+    */
+
+    var result = self
+    grid.withUnsafeBufferPointer { src in
+      result.grid.withUnsafeMutableBufferPointer { dst in
+        var size = Int32(rows * columns)
+        vvsqrt(dst.baseAddress, src.baseAddress, &size)
+      }
+    }
+    return result
+  }
+
+  /* Adds up all the elements in the matrix. */
+  public func sum() -> Double {
+    var result = 0.0
+
+    /*
+    for r in 0..<m.rows {
+      for c in 0..<m.columns {
+        result += m[r, c]
+      }
+    }
+    */
+    
+    grid.withUnsafeBufferPointer { src in
+      vDSP_sveD(src.baseAddress, 1, &result, vDSP_Length(rows * columns))
+    }
+    return result
+  }
+
+  /* Adds up the elements in each row. Returns a column vector. */
+  public func sumRows() -> Matrix {
+    var result = Matrix.zeros(rows: rows, columns: 1)
+    
+    /*
+    for r in 0..<m.rows {
+      for c in 0..<m.columns {
+        result[r] += m[r, c]
+      }
+    }
+    */
+    
+    grid.withUnsafeBufferPointer { src in
+      result.grid.withUnsafeMutableBufferPointer { dst in
+        for r in 0..<rows {
+          vDSP_sveD(src.baseAddress + r*columns, 1, dst.baseAddress + r, vDSP_Length(columns))
+        }
+      }
+    }
+    return result
+  }
+
+  /* Adds up the elements in each column. Returns a row vector. */
+  public func sumColumns() -> Matrix {
+    var result = Matrix.zeros(rows: 1, columns: columns)
+    
+    /*
+    for c in 0..<m.columns {
+      for r in 0..<m.rows {
+        result[c] += m[r, c]
+      }
+    }
+    */
+    
+    grid.withUnsafeBufferPointer { src in
+      result.grid.withUnsafeMutableBufferPointer { dst in
+        for c in 0..<columns {
+          vDSP_sveD(src.baseAddress + c, columns, dst.baseAddress + c, vDSP_Length(rows))
+        }
+      }
+    }
+    return result
+  }
 }
 
 // MARK: - Minimum and maximum
@@ -1052,10 +1051,9 @@ extension Matrix {
 
     // Note: we cannot access sigma[] inside the withUnsafeMutableBufferPointer
     // block, so we do it afterwards.
-    for c in range {
-      sigma[c] /= Double(rows) - 1   // sample stddev, not population
-      sigma[c] = sqrt(sigma[c])
-    }
+    sigma = sigma / (Double(rows) - 1)   // sample stddev, not population
+    sigma = sigma.sqrt()
+
     return sigma
   }
 }

@@ -303,7 +303,7 @@ extension MatrixTests {
     let m = Matrix([[1, 2, 3], [0, 4, 0], [3, 2, 1]])
     let M = copy(m)
 
-    let i = inv(m)
+    let i = m.inverse()
     XCTAssertEqual(m.rows, i.rows)
     XCTAssertEqual(m.columns, i.columns)
     
@@ -319,7 +319,7 @@ extension MatrixTests {
     XCTAssertEqual(i[2, 1], -0.125)
     XCTAssertEqual(i[2, 2], -0.125)
     
-    let o = inv(i)
+    let o = i.inverse()
     assertEqual(m, o)
 
     // make sure accelerate framework magic didn't overwrite the original
@@ -328,7 +328,7 @@ extension MatrixTests {
 
   func testInverseIdentityMatrix() {
     let m = Matrix.identity(size: 3)
-    let i = inv(m)
+    let i = m.inverse()
     assertEqual(m, i)
   }
 
@@ -468,7 +468,7 @@ extension MatrixTests {
     let A = copy(a)
     let B = copy(b)
     assertEqual(a / b, c, accuracy: 1e-10)
-    assertEqual(a * inv(b), c, accuracy: 1e-10)
+    assertEqual(a * b.inverse(), c, accuracy: 1e-10)
     assertEqual(a, A)
     assertEqual(b, B)
 
@@ -510,7 +510,7 @@ extension MatrixTests {
     let a = Matrix([[1, 2], [3, 4], [5, 6]])
     let b = Matrix([[2.7182818285, 7.3890560989], [20.0855369232, 54.5981500331], [148.4131591026, 403.4287934927]])
     let A = copy(a)
-    assertEqual(exp(a), b, accuracy: 1e-10)
+    assertEqual(a.exp(), b, accuracy: 1e-10)
     assertEqual(a, A)
   }
 
@@ -518,7 +518,7 @@ extension MatrixTests {
     let a = Matrix([[1, 2], [3, 4], [5, 6]])
     let b = Matrix([[0.0000000000, 0.6931471806], [1.0986122887, 1.3862943611], [1.6094379124, 1.7917594692]])
     let A = copy(a)
-    assertEqual(log(a), b, accuracy: 1e-10)
+    assertEqual(a.log(), b, accuracy: 1e-10)
     assertEqual(a, A)
   }
 
@@ -527,8 +527,8 @@ extension MatrixTests {
     let b = Matrix([[1, 4], [9, 16], [25, 36]])
     let c = Matrix([[1.0000000000, 1.4142135624], [1.7320508076, 2.0000000000], [2.2360679775, 2.4494897428]])
     let A = copy(a)
-    assertEqual(pow(a, 2), b, accuracy: 1e-10)
-    assertEqual(pow(a, 0.5), c, accuracy: 1e-10)
+    assertEqual(a.pow(2), b, accuracy: 1e-10)
+    assertEqual(a.pow(0.5), c, accuracy: 1e-10)
     assertEqual(a, A)
   }
   
@@ -536,35 +536,35 @@ extension MatrixTests {
     let a = Matrix([[1, 2], [3, 4], [5, 6]])
     let b = Matrix([[1, 4], [9, 16], [25, 36]])
     let A = copy(a)
-    assertEqual(sqrt(b), a, accuracy: 1e-10)
-    assertEqual(sqrt(a), pow(a, 0.5), accuracy: 1e-10)
+    assertEqual(b.sqrt(), a, accuracy: 1e-10)
+    assertEqual(a.sqrt(), a.pow(0.5), accuracy: 1e-10)
     assertEqual(a, A)
   }
 
   func testSumAll() {
     let a = Matrix([[1, 2], [3, 4], [5, 6]])
     let A = copy(a)
-    XCTAssertEqual(sum(a), 21)
+    XCTAssertEqual(a.sum(), 21)
     assertEqual(a, A)
 
     let b = Matrix([[-1, -2], [-3, -4], [-5, -6]])
-    XCTAssertEqual(sum(b), -21)
+    XCTAssertEqual(b.sum(), -21)
     
     let i = Matrix.identity(size: 10)
-    XCTAssertEqual(sum(i), 10)
+    XCTAssertEqual(i.sum(), 10)
     
     let z = Matrix.zeros(rows: 10, columns: 20)
-    XCTAssertEqual(sum(z), 0)
+    XCTAssertEqual(z.sum(), 0)
 
     let o = Matrix.ones(rows: 50, columns: 50)
-    XCTAssertEqual(sum(o), 2500)
+    XCTAssertEqual(o.sum(), 2500)
   }
   
   func testSumRows() {
     let a = Matrix([[1, 2], [3, 4], [5, 6]])
     let b = Matrix([3, 7, 11], isColumnVector: true)
     let A = copy(a)
-    assertEqual(sumRows(a), b)
+    assertEqual(a.sumRows(), b)
     assertEqual(a, A)
   }
 
@@ -572,7 +572,7 @@ extension MatrixTests {
     let a = Matrix([[1, 2], [3, 4], [5, 6]])
     let b = Matrix([9, 12])
     let A = copy(a)
-    assertEqual(sumColumns(a), b)
+    assertEqual(a.sumColumns(), b)
     assertEqual(a, A)
   }
 }

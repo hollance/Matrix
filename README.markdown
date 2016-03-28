@@ -16,7 +16,7 @@ let x = Matrix(rows: 1, columns: 200)
 
 // Calculate the distance between the test example and every training example
 // and store this in a new column vector
-let distances = sqrt(sumRows(pow(x.tile(X.rows) - X, 2)))
+let distances = (x.tile(X.rows) - X).pow(2).sumRows().sqrt()
 ```
 
 The `sqrt()`, `sumRows()`, and `pow()` functions work on all the elements of the matrix. The `-` operator subtracts the matrices element-wise. This one-liner does the work of several loops, using accelerated CPU instructions from the BLAS, LAPACK, and vDSP libraries inside the Accelerate.framework.
@@ -25,13 +25,36 @@ The Xcode project only includes unit tests, you can't run it. Press **Cmd-U** to
 
 > Note: `Matrix` is a value type. Any operations return a new instance. That means it does not always optimally use memory. This should only be a problem if you're working with huge matrices and you have an algorithm that can work in-place, e.g. you want to subtract all elements in matrix B from matrix A and store the result back in A instead of a new matrix C.
 
+## Notes on the API
+
+I decided to make all operations either member functions of `Matrix` or operators. There are no free functions that work on `Matrix`.
+
+Even though the following reads more "mathematical",
+
+    sqrt(sumRows(pow(x.tile(X.rows) - X, 2)))
+
+it requires you to unravel what happens "inside-out". Using member functions you can simply read from left-to-right:
+
+    (x.tile(X.rows) - X).pow(2).sumRows().sqrt()
+ 
+### The `!*`, `!/`, etc operators
+
+This discussion concerns operators that work on two matrices.
+
+The `*` operator exists to multiply two matrices (or a matrix with a vector). Likewise, `/` is for dividing two matrices, i.e. multiplying one matrix with the inverse of another.
+ 
+But what happens when we multiply or divide two matrices where we want the operation to happen on each individual element rather than on the matrix as a whole? We can't use `*` or `/` for that because then we don't have to way to distinguish between "multiply matrix with vector" and "multiply matrix element-wise with vector".
+
+Therefore, all element-wise operations that take place on matrices of different sizes, must use a `!` operator.
+
+(Is there a better symbol to use for this? I like `!` but it already gets used for other purposes. Maybe `∀*` or `⊗⊘⊕⊖`.)
+
 ## The TO-DO list
 
 Extend the functionality of:
 
 - `tile()` currently only duplicates a row vector; in NumPy it can tile entire matrices in both directions.
 - column-vector versions of `!-` and `!/`
-- `mean(range:)` and `std(range:)` return a matrix with the same size as the original, but I don't remember why I did that. Was that an optimization or did I need that for some algorithm? Probably change this to return a smaller matrix.
 
 Add functions for inserting/removing rows:
 
