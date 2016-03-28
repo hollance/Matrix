@@ -86,7 +86,35 @@ extension MatrixTests {
       XCTAssertEqual(m[r, 0], v[r])
     }
   }
-  
+
+  func testCreateRowVectorFromRange() {
+    let m1 = Matrix(10..<20)
+    XCTAssertEqual(m1.rows, 10)
+    for r in 0..<m1.rows {
+      XCTAssertEqual(m1[r, 0], Double(r + 10))
+    }
+
+    let m2 = Matrix(-10...10)
+    XCTAssertEqual(m2.rows, 21)
+    for r in 0..<m2.rows {
+      XCTAssertEqual(m2[r, 0], Double(-10 + r))
+    }
+  }
+
+  func testCreateColumnVectorFromRange() {
+    let m1 = Matrix(10..<20, isColumnVector: true)
+    XCTAssertEqual(m1.columns, 10)
+    for c in 0..<m1.columns {
+      XCTAssertEqual(m1[0, c], Double(c + 10))
+    }
+
+    let m2 = Matrix(-10...10, isColumnVector: true)
+    XCTAssertEqual(m2.columns, 21)
+    for c in 0..<m2.columns {
+      XCTAssertEqual(m2[0, c], Double(-10 + c))
+    }
+  }
+
   func testZeros() {
     let m = Matrix.zeros(rows: 3, columns: 3)
     for r in 0..<3 {

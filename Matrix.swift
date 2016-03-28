@@ -87,6 +87,21 @@ extension Matrix {
     }
     self.grid = contents
   }
+
+  /* Creates a matrix containing the numbers in the specified range. */
+  public init(_ range: Range<Int>, isColumnVector: Bool = false) {
+    if isColumnVector {
+      self.init(rows: 1, columns: range.endIndex - range.startIndex, repeatedValue: 0)
+      for c in range {
+        self[0, c - range.startIndex] = Double(c)
+      }
+    } else {
+      self.init(rows: range.endIndex - range.startIndex, columns: 1, repeatedValue: 0)
+      for r in range {
+        self[r - range.startIndex, 0] = Double(r)
+      }
+    }
+  }
 }
 
 extension Matrix {
