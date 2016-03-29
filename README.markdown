@@ -2,7 +2,9 @@
 
 This is a basic matrix type that I wrote when I was playing with machine learning in Swift. It is by no means complete or finished.
 
-The API is loosely based on NumPy and Octave/MATLAB. `Matrix` uses the Accelerate.framework for most of its operations, so it should be pretty fast -- but no doubt there's lots of room for improvement.
+The API is very loosely based on NumPy and Octave/MATLAB.
+
+`Matrix` uses the Accelerate.framework for most of its operations, so it should be pretty fast -- but no doubt there's lots of room for improvement.
 
 For example, here's how you can use `Matrix` as part of the k-nearest neighbors algorithm:
 
@@ -36,18 +38,26 @@ Even though the following reads more "mathematical",
 it requires you to unravel what happens "inside-out". Using member functions you can simply read from left-to-right:
 
     (x.tile(X.rows) - X).pow(2).sumRows().sqrt()
- 
-### The `!*`, `!/`, etc operators
 
-This discussion concerns operators that work on two matrices.
+### Operators
 
-The `*` operator exists to multiply two matrices (or a matrix with a vector). Likewise, `/` is for dividing two matrices, i.e. multiplying one matrix with the inverse of another.
- 
-But what happens when we multiply or divide two matrices where we want the operation to happen on each individual element rather than on the matrix as a whole? We can't use `*` or `/` for that because then we don't have to way to distinguish between "multiply matrix with vector" and "multiply matrix element-wise with vector".
+The `*`, `+`, etc operators on two matrices perform element-wise operations. So `A * B` on two matrices `A` and `B` that have the same size, multiplies each element of matrix `A` with each element of matrix `B`.
 
-Therefore, all element-wise operations that take place on matrices of different sizes, must use a `!` operator.
+You can also use these operators on a matrix and a row vector, in which case the operation happens on each of the columns of the matrix separately. And when you use a matrix and a column vector, the operation affects each of the rows of the matrix.
 
-(Is there a better symbol to use for this? I like `!` but it already gets used for other purposes. Maybe `∀*` or `⊗⊘⊕⊖`.)
+Example:
+
+    X = [ a b c ]    v = [ 1 2 3 ]   X * v = [ a*1 b*2 c*3 ]
+        [ d e f ]                            [ d*1 e*2 f*3 ]
+        [ g h i ]                            [ g*1 h*2 i*3 ]
+
+and:
+
+    X = [ a b c ]    v = [ 1 ]        X * v = [ a*1 b*1 c*1 ]
+        [ d e f ]        [ 2 ]                [ d*2 e*2 f*2 ]
+        [ g h i ]        [ 3 ]                [ g*3 h*3 i*3 ]
+
+To do matrix-matrix (or matrix-vector) multiplication, you have to use the special operator `<*>`. Likewise, `</>` is for dividing two matrices, i.e. multiplying one matrix with the inverse of another.
 
 ## The TO-DO list
 

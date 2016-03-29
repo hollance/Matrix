@@ -371,6 +371,28 @@ extension MatrixTests {
     assertEqual(b, B)
   }
 
+  func testAddMatrixRowVector() {
+    let a = Matrix([[10, 20], [30, 40], [50, 60]])
+    let b = Matrix([5, 10])
+    let c = Matrix([[15, 30], [35, 50], [55, 70]])
+    let A = copy(a)
+    let B = copy(b)
+    assertEqual(a + b, c)
+    assertEqual(a, A)
+    assertEqual(b, B)
+  }
+
+  func testAddMatrixColumnVector() {
+    let a = Matrix([[10, 20], [30, 40], [50, 60]])
+    let b = Matrix([5, 10, 1], isColumnVector: true)
+    let c = Matrix([[15, 25], [40, 50], [51, 61]])
+    let A = copy(a)
+    let B = copy(b)
+    assertEqual(a + b, c)
+    assertEqual(a, A)
+    assertEqual(b, B)
+  }
+
   func testAddMatrixScalar() {
     let a = Matrix([[ 1,  2], [ 3,  4], [ 5,  6]])
     let b = Matrix([[11, 12], [13, 14], [15, 16]])
@@ -395,6 +417,28 @@ extension MatrixTests {
     assertEqual(b, B)
   }
 
+  func testSubtractMatrixRowVector() {
+    let a = Matrix([[10, 20], [30, 40], [50, 60]])
+    let b = Matrix([5, 10])
+    let c = Matrix([[5, 10], [25, 30], [45, 50]])
+    let A = copy(a)
+    let B = copy(b)
+    assertEqual(a - b, c)
+    assertEqual(a, A)
+    assertEqual(b, B)
+  }
+
+  func testSubtractMatrixColumnVector() {
+    let a = Matrix([[10, 20], [30, 40], [50, 60]])
+    let b = Matrix([5, 10, 1], isColumnVector: true)
+    let c = Matrix([[5, 15], [20, 30], [49, 59]])
+    let A = copy(a)
+    let B = copy(b)
+    assertEqual(a - b, c)
+    assertEqual(a, A)
+    assertEqual(b, B)
+  }
+
   func testSubtractMatrixScalar() {
     let a = Matrix([[ 1,  2], [ 3,  4], [ 5,  6]])
     let b = Matrix([[11, 12], [13, 14], [15, 16]])
@@ -402,17 +446,6 @@ extension MatrixTests {
     assertEqual(b - 10, a)
     let c = Matrix([[-1, -2], [-3, -4], [-5, -6]])
     assertEqual(10 - b, c)
-    assertEqual(b, B)
-  }
-
-  func testSubtractMatrixRowVector() {
-    let a = Matrix([[10, 20], [30, 40], [50, 60]])
-    let b = Matrix([5, 10])
-    let c = Matrix([[5, 10], [25, 30], [45, 50]])
-    let A = copy(a)
-    let B = copy(b)
-    assertEqual(a !- b, c)
-    assertEqual(a, A)
     assertEqual(b, B)
   }
 
@@ -433,7 +466,7 @@ extension MatrixTests {
     let c = Matrix([[50], [110], [170]])        // 3x1
     let A = copy(a)
     let B = copy(b)
-    assertEqual(a * b, c)
+    assertEqual(a <*> b, c)
     assertEqual(a, A)
     assertEqual(b, B)
 
@@ -441,17 +474,50 @@ extension MatrixTests {
     let e = Matrix([[90, 120, 150], [190, 260, 330], [290, 400, 510]])  // 3x3
     let f = Matrix([[220, 280], [490, 640]])                            // 2x2
     let D = d
-    assertEqual(a * d, e)
-    assertEqual(d * a, f)
+    assertEqual(a <*> d, e)
+    assertEqual(d <*> a, f)
     assertEqual(a, A)
     assertEqual(d, D)
     
     let i = Matrix.identity(size: 2)    // 2x2
     let j = Matrix.identity(size: 3)    // 3x3
-    assertEqual(a * i, a)
-    assertEqual(j * a, a)
+    assertEqual(a <*> i, a)
+    assertEqual(j <*> a, a)
   }
-  
+
+  func testMultiplyMatrixMatrixElementwise() {
+    let a = Matrix([[1, 2], [3, 4], [5, 6]])
+    let b = Matrix([[10, 20], [30, 40], [50, 60]])
+    let c = Matrix([[10, 40], [90, 160], [250, 360]])
+    let A = copy(a)
+    let B = copy(b)
+    assertEqual(a * b, c)
+    assertEqual(a, A)
+    assertEqual(b, B)
+  }
+
+  func testMultiplyMatrixRowVector() {
+    let a = Matrix([[2, 5], [6, 10], [12, 20]])
+    let b = Matrix([5, 4])
+    let c = Matrix([[10, 20], [30, 40], [60, 80]])
+    let A = copy(a)
+    let B = copy(b)
+    assertEqual(a * b, c)
+    assertEqual(a, A)
+    assertEqual(b, B)
+  }
+
+  func testMultiplyMatrixColumnVector() {
+    let a = Matrix([[2, 4], [2, 3], [6, 8]])
+    let b = Matrix([5, 15, 10], isColumnVector: true)
+    let c = Matrix([[10, 20], [30, 45], [60, 80]])
+    let A = copy(a)
+    let B = copy(b)
+    assertEqual(a * b, c)
+    assertEqual(a, A)
+    assertEqual(b, B)
+  }
+
   func testMultiplyMatrixScalar() {
     let a = Matrix([[ 1,  2], [ 3,  4], [ 5,  6]])
     let b = Matrix([[10, 20], [30, 40], [50, 60]])
@@ -467,15 +533,48 @@ extension MatrixTests {
     let c = Matrix([[3, -2], [2, -1], [1, 0]])   // 3x2
     let A = copy(a)
     let B = copy(b)
-    assertEqual(a / b, c, accuracy: 1e-10)
-    assertEqual(a * b.inverse(), c, accuracy: 1e-10)
+    assertEqual(a </> b, c, accuracy: 1e-10)
+    assertEqual(a <*> b.inverse(), c, accuracy: 1e-10)
     assertEqual(a, A)
     assertEqual(b, B)
 
     let i = Matrix.identity(size: 2)    // 2x2
-    assertEqual(a / i, a)
+    assertEqual(a </> i, a)
   }
-  
+
+  func testDivideMatrixMatrixElementwise() {
+    let a = Matrix([[10, 40], [90, 160], [250, 360]])
+    let b = Matrix([[10, 20], [30, 40], [50, 60]])
+    let c = Matrix([[1, 2], [3, 4], [5, 6]])
+    let A = copy(a)
+    let B = copy(b)
+    assertEqual(a / b, c)
+    assertEqual(a, A)
+    assertEqual(b, B)
+  }
+
+  func testDivideMatrixRowVector() {
+    let a = Matrix([[10, 20], [30, 40], [60, 80]])
+    let b = Matrix([5, 4])
+    let c = Matrix([[2, 5], [6, 10], [12, 20]])
+    let A = copy(a)
+    let B = copy(b)
+    assertEqual(a / b, c)
+    assertEqual(a, A)
+    assertEqual(b, B)
+  }
+
+  func testDivideMatrixColumnVector() {
+    let a = Matrix([[10, 20], [30, 45], [60, 80]])
+    let b = Matrix([5, 15, 10], isColumnVector: true)
+    let c = Matrix([[2, 4], [2, 3], [6, 8]])
+    let A = copy(a)
+    let B = copy(b)
+    assertEqual(a / b, c)
+    assertEqual(a, A)
+    assertEqual(b, B)
+  }
+
   func testDivideMatrixScalar() {
     let a = Matrix([[ 1,  2], [ 3,  4], [ 5,  6]])
     let b = Matrix([[10, 20], [30, 40], [50, 60]])
@@ -489,17 +588,6 @@ extension MatrixTests {
 
     let d = Matrix([[10, 5], [10/3, 2.5], [2, 10/6]])
     assertEqual(10 / a, d, accuracy: 1e-10)
-  }
-
-  func testDivideMatrixRowVector() {
-    let a = Matrix([[10, 20], [30, 40], [60, 80]])
-    let b = Matrix([5, 4])
-    let c = Matrix([[2, 5], [6, 10], [12, 20]])
-    let A = copy(a)
-    let B = copy(b)
-    assertEqual(a !/ b, c)
-    assertEqual(a, A)
-    assertEqual(b, B)
   }
 }
 
