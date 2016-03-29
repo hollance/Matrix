@@ -698,12 +698,22 @@ public func * (lhs: Matrix, rhs: Matrix) -> Matrix {
       return results
 
     } else if lhs.rows == rhs.rows {   // lhs and rhs are same size
-
-      // TODO: Accelerate element-wise * on 2 equal-sized matrices
+      /*
       var results = lhs
       for r in 0..<results.rows {
         for c in 0..<results.columns {
           results[r, c] *= rhs[r, c]
+        }
+      }
+      return results
+      */
+
+      var results = Matrix.zeros(size: lhs.size)
+      rhs.grid.withUnsafeBufferPointer{ srcX in
+        lhs.grid.withUnsafeBufferPointer{ srcY in
+          results.grid.withUnsafeMutableBufferPointer{ dstZ in
+            vDSP_vmulD(srcX.baseAddress, 1, srcY.baseAddress, 1, dstZ.baseAddress, 1, vDSP_Length(lhs.rows * lhs.columns))
+          }
         }
       }
       return results
@@ -805,8 +815,7 @@ public func / (lhs: Matrix, rhs: Matrix) -> Matrix {
       rhs.grid.withUnsafeBufferPointer{ srcX in
         lhs.grid.withUnsafeBufferPointer{ srcY in
           results.grid.withUnsafeMutableBufferPointer{ dstZ in
-            var count = Int32(lhs.rows * lhs.columns)
-            vvdiv(dstZ.baseAddress, srcY.baseAddress, srcX.baseAddress, &count)
+            vDSP_vdivD(srcX.baseAddress, 1, srcY.baseAddress, 1, dstZ.baseAddress, 1, vDSP_Length(lhs.rows * lhs.columns))
           }
         }
       }

@@ -90,10 +90,6 @@ Other new operators:
 
 - `==` operator on the elements of two matrices, writes `1.0` if true or `0.0` if false
 
-Stuff to accelerate:
-
-- Accelerate element-wise `*` on 2 equal-sized matrices (there is no `vvmul()?`)
-
 ## Other ideas for improvements
 
 ### Make it faster!
