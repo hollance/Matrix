@@ -699,6 +699,7 @@ public func * (lhs: Matrix, rhs: Matrix) -> Matrix {
 
     } else if lhs.rows == rhs.rows {   // lhs and rhs are same size
 
+      // TODO: Accelerate element-wise * on 2 equal-sized matrices
       var results = lhs
       for r in 0..<results.rows {
         for c in 0..<results.columns {

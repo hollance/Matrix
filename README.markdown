@@ -64,7 +64,10 @@ To do matrix-matrix (or matrix-vector) multiplication, you have to use the speci
 Extend the functionality of:
 
 - `tile()` currently only duplicates a row vector; in NumPy it can tile entire matrices in both directions.
-- column-vector versions of `!-` and `!/`
+
+Maybe:
+
+- Replace `load(data: [[Double]], range: Range<Int>, at: Int)` with a subscript operator: `subscript(columns: Range<Int>)` which takes a `Matrix` and copies it into the specified columns, or returns a matrix with just those columns.
 
 Add functions for inserting/removing rows:
 
@@ -86,10 +89,10 @@ Other new functions:
 Other new operators:
 
 - `==` operator on the elements of two matrices, writes `1.0` if true or `0.0` if false
-- `!*` equivalent of `!/
-- `!+` equivalent of `!-`
-- `!*` of two equal-sized matrices
-- `!/` of two equal-sized matrices (using `vvdiv()`)
+
+Stuff to accelerate:
+
+- Accelerate element-wise `*` on 2 equal-sized matrices (there is no `vvmul()?`)
 
 ## Other ideas for improvements
 
