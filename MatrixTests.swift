@@ -155,23 +155,6 @@ extension MatrixTests {
     assertEqual(v, v.tile(1))
   }
   
-  func testCopy() {
-    let m = Matrix([[1, 2], [3, 4], [5, 6]])
-    let M = copy(m)
-
-    assertEqual(m.copy([0]), [1, 2])
-    assertEqual(m.copy([1]), [3, 4])
-    assertEqual(m.copy([2]), [5, 6])
-    
-    assertEqual(m.copy([0, 1]), Matrix([[1, 2], [3, 4]]))
-    assertEqual(m.copy([1, 0]), Matrix([[3, 4], [1, 2]]))
-    assertEqual(m.copy([0, 2]), Matrix([[1, 2], [5, 6]]))
-    assertEqual(m.copy([2, 0]), Matrix([[5, 6], [1, 2]]))
-    assertEqual(m.copy([2, 1, 0]), Matrix([[5, 6], [3, 4], [1, 2]]))
-    
-    assertEqual(m, M)
-  }
-
   func testLoad() {
     let a = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]
     var m = Matrix.zeros(rows: 3, columns: 4)
@@ -324,6 +307,24 @@ extension MatrixTests {
 
     m[rows: 2...2] = Matrix([-70, -80, -90])
     assertEqual(m, Matrix([[-10, -20, -30], [-40, -50, -60], [-70, -80, -90]]))
+  }
+
+  func testSubscriptRowIndicesGetter() {
+    let m = Matrix([[1, 2], [3, 4], [5, 6]])
+    let M = copy(m)
+
+    assertEqual(m[rows: [0]], [1, 2])
+    assertEqual(m[rows: [1]], [3, 4])
+    assertEqual(m[rows: [2]], [5, 6])
+
+    assertEqual(m[rows: [0, 1]], Matrix([[1, 2], [3, 4]]))
+    assertEqual(m[rows: [1, 0]], Matrix([[3, 4], [1, 2]]))
+    assertEqual(m[rows: [0, 2]], Matrix([[1, 2], [5, 6]]))
+    assertEqual(m[rows: [2, 0]], Matrix([[5, 6], [1, 2]]))
+
+    assertEqual(m[rows: [2, 1, 0]], Matrix([[5, 6], [3, 4], [1, 2]]))
+    
+    assertEqual(m, M)
   }
 
   func testSubscriptColumnGetter() {

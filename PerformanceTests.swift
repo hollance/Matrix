@@ -27,7 +27,7 @@ class PerformanceTests: XCTestCase {
     let M = Matrix.random(rows: 1000, columns: 1000)
     measureBlock() {
       for _ in 1...10 {
-        let _ = M.copy(Array(0..<1000))
+        let _ = M[rows: Array(0..<1000)]
       }
     }
   }

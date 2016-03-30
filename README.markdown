@@ -90,6 +90,7 @@ Maybe make the subscripts return regular arrays as well:
 Add new subscript:
 
 - `subscript(rows: Range<Int>, columns: Range<Int>) -> Matrix` - this sets or gets a submatrix given by the two ranges
+- `subscript(columns: [Int]) -> Matrix` - already have one for rows
 
 Extend the functionality of:
 

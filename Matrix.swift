@@ -178,30 +178,6 @@ extension Matrix {
   }
 }
 
-extension Matrix {
-  /* Creates a new matrix containing just the rows specified. */
-  public func copy(rowIndices: [Int]) -> Matrix {
-    var m = Matrix.zeros(rows: rowIndices.count, columns: columns)
-
-    /*
-    for (i, r) in rowIndices.enumerate() {
-      for c in 0..<columns {
-        m[i, c] = self[r, c]
-      }
-    }
-    */
-
-    grid.withUnsafeBufferPointer { src in
-      m.grid.withUnsafeMutableBufferPointer { dst in
-        for (i, r) in rowIndices.enumerate() {
-          cblas_dcopy(Int32(columns), src.baseAddress + r*columns, 1, dst.baseAddress + i*columns, 1)
-        }
-      }
-    }
-    return m
-  }
-}
-
 // MARK: - Modifying the matrix
 
 extension Matrix {
@@ -318,6 +294,28 @@ extension Matrix {
         }
       }
     }
+  }
+
+  /* Gets just the rows specified, in that order. */
+  public subscript(rows rowIndices: [Int]) -> Matrix {
+    var m = Matrix.zeros(rows: rowIndices.count, columns: columns)
+
+    /*
+    for (i, r) in rowIndices.enumerate() {
+      for c in 0..<columns {
+        m[i, c] = self[r, c]
+      }
+    }
+    */
+
+    grid.withUnsafeBufferPointer { src in
+      m.grid.withUnsafeMutableBufferPointer { dst in
+        for (i, r) in rowIndices.enumerate() {
+          cblas_dcopy(Int32(columns), src.baseAddress + r*columns, 1, dst.baseAddress + i*columns, 1)
+        }
+      }
+    }
+    return m
   }
 
   /* Get or set an entire column. */
