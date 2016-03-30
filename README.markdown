@@ -2,9 +2,13 @@
 
 This is a basic matrix type that I wrote when I was playing with machine learning in Swift. It is by no means complete or finished.
 
-The API is very loosely based on NumPy and Octave/MATLAB.
+The API is very loosely based on NumPy and Octave/MATLAB but more Swift-like.
 
 `Matrix` uses the Accelerate.framework for most of its operations, so it should be pretty fast -- but no doubt there's lots of room for improvement.
+
+> **Note:** The Xcode project only includes unit tests, you can't run it. Press **Cmd-U** to perform the tests.
+
+## How to use it
 
 For example, here's how you can use `Matrix` as part of the k-nearest neighbors algorithm:
 
@@ -23,11 +27,11 @@ let distances = (x.tile(X.rows) - X).pow(2).sumRows().sqrt()
 
 The `sqrt()`, `sumRows()`, and `pow()` functions work on all the elements of the matrix. The `-` operator subtracts the matrices element-wise. This one-liner does the work of several loops, using accelerated CPU instructions from the BLAS, LAPACK, and vDSP libraries inside the Accelerate.framework.
 
-The Xcode project only includes unit tests, you can't run it. Press **Cmd-U** to perform the tests.
-
 > Note: `Matrix` is a value type. Any operations return a new instance. That means it does not always optimally use memory. This should only be a problem if you're working with huge matrices and you have an algorithm that can work in-place, e.g. you want to subtract all elements in matrix B from matrix A and store the result back in A instead of a new matrix C.
 
 ## Notes on the API
+
+### Notation is object-oriented, not mathematical
 
 I decided to make all operations either member functions of `Matrix` or operators. There are no free functions that work on `Matrix`.
 
@@ -41,33 +45,55 @@ it requires you to unravel what happens "inside-out". Using member functions you
 
 ### Operators
 
-The `*`, `+`, etc operators on two matrices perform element-wise operations. So `A * B` on two matrices `A` and `B` that have the same size, multiplies each element of matrix `A` with each element of matrix `B`.
+The `*`, `/`, `+`, `-` operators on two matrices perform *element-wise* operations. 
 
-You can also use these operators on a matrix and a row vector, in which case the operation happens on each of the columns of the matrix separately. And when you use a matrix and a column vector, the operation affects each of the rows of the matrix.
+For example, `A * B` on two matrices `A` and `B` that have the same size, multiplies each element of matrix `A` with each element of matrix `B`. Like so:
 
-Example:
+        [ a b c ]        [ 1 2 3 ]            [ a*1 b*2 c*3 ]
+    A = [ d e f ]    B = [ 4 5 6 ]    A * B = [ d*4 e*5 f*6 ]
+        [ g h i ]        [ 7 8 9 ]            [ g*7 h*8 i*9 ]
 
-    X = [ a b c ]    v = [ 1 2 3 ]   X * v = [ a*1 b*2 c*3 ]
-        [ d e f ]                            [ d*1 e*2 f*3 ]
-        [ g h i ]                            [ g*1 h*2 i*3 ]
+This is *not* the same as proper matrix-matrix (or matrix-vector) multiplication. For that, you have to use the special operator `<*>`. Likewise, `</>` is for dividing two matrices, i.e. multiplying one matrix with the inverse of another.
 
-and:
+You can also use the `*`, `/`, `+`, `-` operators on a matrix and a row vector, in which case the operation happens on each of the columns of the matrix separately. And when you use a matrix and a column vector, the operation affects each of the rows of the matrix.
 
-    X = [ a b c ]    v = [ 1 ]        X * v = [ a*1 b*1 c*1 ]
-        [ d e f ]        [ 2 ]                [ d*2 e*2 f*2 ]
+For example, a matrix and a row vector:
+
+        [ a b c ]                             [ a*1 b*2 c*3 ]
+    X = [ d e f ]    v = [ 1 2 3 ]    X * v = [ d*1 e*2 f*3 ]
+        [ g h i ]                             [ g*1 h*2 i*3 ]
+
+and a matrix and a column vector:
+
+        [ a b c ]        [ 1 ]                [ a*1 b*1 c*1 ]
+    X = [ d e f ]    v = [ 2 ]        X * v = [ d*2 e*2 f*2 ]
         [ g h i ]        [ 3 ]                [ g*3 h*3 i*3 ]
-
-To do matrix-matrix (or matrix-vector) multiplication, you have to use the special operator `<*>`. Likewise, `</>` is for dividing two matrices, i.e. multiplying one matrix with the inverse of another.
 
 ## The TO-DO list
 
-Extend the functionality of:
+Accelerate:
 
-- `tile()` currently only duplicates a row vector; in NumPy it can tile entire matrices in both directions.
+- `subscript(rows: Range<Int>) -> Matrix`
+- `subscript(columns: Range<Int>) -> Matrix`
 
 Maybe:
 
 - Replace `load(data: [[Double]], range: Range<Int>, at: Int)` with a subscript operator: `subscript(columns: Range<Int>)` which takes a `Matrix` and copies it into the specified columns, or returns a matrix with just those columns.
+
+Maybe make the subscripts return regular arrays as well:
+
+- `subscript(row: Int) -> [Double]`
+- `subscript(rows: Range<Int>) -> [[Double]]`
+- `subscript(column: Int) -> [Double]`
+- `subscript(columns: Range<Int>) -> [[Double]]`
+
+Add new subscript:
+
+- `subscript(rows: Range<Int>, columns: Range<Int>) -> Matrix` - this sets or gets a submatrix given by the two ranges
+
+Extend the functionality of:
+
+- `tile()` currently only duplicates a row vector; in NumPy it can tile entire matrices in both directions.
 
 Add functions for inserting/removing rows:
 
@@ -79,12 +105,6 @@ Add functions for inserting/removing rows:
 - `remove(rows: Range<Int>)`
 - `remove(column: Int)`
 - `remove(columns: Range<Int>)`
-- `copy(src: Matrix, rowRange:, columnRange:, dest: Matrix, toRow:, toColumn:)`
-
-Other new functions:
-
-- `subscript(rows: Range<Int>) -> Matrix`
-- `subscript(columns: Range<Int>) -> Matrix`
 
 Other new operators:
 
