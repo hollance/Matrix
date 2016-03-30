@@ -225,7 +225,7 @@ extension MatrixTests {
     }
   }
 
-  func testSubscriptRow() {
+  func testSubscriptRowGetter() {
     let a = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]
     var m = Matrix(a)
     let M = copy(m)
@@ -243,6 +243,11 @@ extension MatrixTests {
     XCTAssertEqual(r2[1], 6.0)
 
     assertEqual(m, M)
+  }
+
+  func testSubscriptRowSetter() {
+    let a = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]
+    var m = Matrix(a)
 
     m[row: 0] = Matrix([-1, -2])
     XCTAssertEqual(m[0, 0], -1.0)
@@ -257,7 +262,71 @@ extension MatrixTests {
     XCTAssertEqual(m[2, 1], -6.0)
   }
 
-  func testSubscriptColumn() {
+  func testSubscriptRowsGetter() {
+    let a = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]
+    var m = Matrix(a)
+    let M = copy(m)
+
+    let r0 = m[rows: 0...0]
+    XCTAssertEqual(r0.rows, 1)
+    XCTAssertEqual(r0.columns, 3)
+    XCTAssertEqual(r0[0, 0], 1.0)
+    XCTAssertEqual(r0[0, 1], 2.0)
+    XCTAssertEqual(r0[0, 2], 3.0)
+
+    let r1 = m[rows: 0...1]
+    XCTAssertEqual(r1.rows, 2)
+    XCTAssertEqual(r1.columns, 3)
+    XCTAssertEqual(r1[0, 0], 1.0)
+    XCTAssertEqual(r1[0, 1], 2.0)
+    XCTAssertEqual(r1[0, 2], 3.0)
+    XCTAssertEqual(r1[1, 0], 4.0)
+    XCTAssertEqual(r1[1, 1], 5.0)
+    XCTAssertEqual(r1[1, 2], 6.0)
+
+    let r2 = m[rows: 0...2]
+    assertEqual(r2, m)
+
+    let r3 = m[rows: 1...2]
+    XCTAssertEqual(r3.rows, 2)
+    XCTAssertEqual(r3.columns, 3)
+    XCTAssertEqual(r3[0, 0], 4.0)
+    XCTAssertEqual(r3[0, 1], 5.0)
+    XCTAssertEqual(r3[0, 2], 6.0)
+    XCTAssertEqual(r3[1, 0], 7.0)
+    XCTAssertEqual(r3[1, 1], 8.0)
+    XCTAssertEqual(r3[1, 2], 9.0)
+
+    let r4 = m[rows: 2...2]
+    XCTAssertEqual(r4.rows, 1)
+    XCTAssertEqual(r4.columns, 3)
+    XCTAssertEqual(r4[0, 0], 7.0)
+    XCTAssertEqual(r4[0, 1], 8.0)
+    XCTAssertEqual(r4[0, 2], 9.0)
+
+    assertEqual(m, M)
+  }
+
+  func testSubscriptRowsSetter() {
+    var m = Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+    m[rows: 0...0] = Matrix([-1, -2, -3])
+    assertEqual(m, Matrix([[-1, -2, -3], [4, 5, 6], [7, 8, 9]]))
+
+    m[rows: 0...1] = Matrix([[10, 20, 30], [-4, -5, -6]])
+    assertEqual(m, Matrix([[10, 20, 30], [-4, -5, -6], [7, 8, 9]]))
+
+    m[rows: 0...2] = Matrix([[-10, -20, -30], [40, 50, 60], [-7, -8, -9]])
+    assertEqual(m, Matrix([[-10, -20, -30], [40, 50, 60], [-7, -8, -9]]))
+
+    m[rows: 1...2] = Matrix([[-40, -50, -60], [70, 80, 90]])
+    assertEqual(m, Matrix([[-10, -20, -30], [-40, -50, -60], [70, 80, 90]]))
+
+    m[rows: 2...2] = Matrix([-70, -80, -90])
+    assertEqual(m, Matrix([[-10, -20, -30], [-40, -50, -60], [-70, -80, -90]]))
+  }
+
+  func testSubscriptColumnGetter() {
     let a = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]
     var m = Matrix(a)
     let M = copy(m)
@@ -273,6 +342,11 @@ extension MatrixTests {
     XCTAssertEqual(c1[2], 6.0)
 
     assertEqual(m, M)
+  }
+
+  func testSubscriptColumnSetter() {
+    let a = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]
+    var m = Matrix(a)
 
     m[column: 0] = Matrix([-1, -3, -5], isColumnVector: true)
     XCTAssertEqual(m[0, 0], -1.0)
@@ -283,6 +357,70 @@ extension MatrixTests {
     XCTAssertEqual(m[0, 1], -2.0)
     XCTAssertEqual(m[1, 1], -4.0)
     XCTAssertEqual(m[2, 1], -6.0)
+  }
+
+  func testSubscriptColumnsGetter() {
+    let a = [[1.0, 4.0, 7.0], [2.0, 5.0, 8.0], [3.0, 6.0, 9.0]]
+    var m = Matrix(a)
+    let M = copy(m)
+
+    let r0 = m[columns: 0...0]
+    XCTAssertEqual(r0.rows, 3)
+    XCTAssertEqual(r0.columns, 1)
+    XCTAssertEqual(r0[0, 0], 1.0)
+    XCTAssertEqual(r0[1, 0], 2.0)
+    XCTAssertEqual(r0[2, 0], 3.0)
+
+    let r1 = m[columns: 0...1]
+    XCTAssertEqual(r1.rows, 3)
+    XCTAssertEqual(r1.columns, 2)
+    XCTAssertEqual(r1[0, 0], 1.0)
+    XCTAssertEqual(r1[1, 0], 2.0)
+    XCTAssertEqual(r1[2, 0], 3.0)
+    XCTAssertEqual(r1[0, 1], 4.0)
+    XCTAssertEqual(r1[1, 1], 5.0)
+    XCTAssertEqual(r1[2, 1], 6.0)
+
+    let r2 = m[columns: 0...2]
+    assertEqual(r2, m)
+
+    let r3 = m[columns: 1...2]
+    XCTAssertEqual(r3.rows, 3)
+    XCTAssertEqual(r3.columns, 2)
+    XCTAssertEqual(r3[0, 0], 4.0)
+    XCTAssertEqual(r3[1, 0], 5.0)
+    XCTAssertEqual(r3[2, 0], 6.0)
+    XCTAssertEqual(r3[0, 1], 7.0)
+    XCTAssertEqual(r3[1, 1], 8.0)
+    XCTAssertEqual(r3[2, 1], 9.0)
+
+    let r4 = m[columns: 2...2]
+    XCTAssertEqual(r4.rows, 3)
+    XCTAssertEqual(r4.columns, 1)
+    XCTAssertEqual(r4[0, 0], 7.0)
+    XCTAssertEqual(r4[1, 0], 8.0)
+    XCTAssertEqual(r4[2, 0], 9.0)
+
+    assertEqual(m, M)
+  }
+
+  func testSubscriptColumnsSetter() {
+    var m = Matrix([[1, 4, 7], [2, 5, 8], [3, 6, 9]])
+
+    m[columns: 0...0] = Matrix([[-1], [-2], [-3]])
+    assertEqual(m, Matrix([[-1, 4, 7], [-2, 5, 8], [-3, 6, 9]]))
+
+    m[columns: 0...1] = Matrix([[10, -4], [20, -5], [30, -6]])
+    assertEqual(m, Matrix([[10, -4, 7], [20, -5, 8], [30, -6, 9]]))
+
+    m[columns: 0...2] = Matrix([[-10, 40, -7], [-20, 50, -8], [-30, 60, -9]])
+    assertEqual(m, Matrix([[-10, 40, -7], [-20, 50, -8], [-30, 60, -9]]))
+
+    m[columns: 1...2] = Matrix([[-40, 70], [-50, 80], [-60, 90]])
+    assertEqual(m, Matrix([[-10, -40, 70], [-20, -50, 80], [-30, -60, 90]]))
+
+    m[columns: 2...2] = Matrix([[-70], [-80], [-90]])
+    assertEqual(m, Matrix([[-10, -40, -70], [-20, -50, -80], [-30, -60, -90]]))
   }
 
   func testSubscriptScalar() {

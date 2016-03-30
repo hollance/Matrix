@@ -296,6 +296,30 @@ extension Matrix {
     }
   }
 
+  /* Get or set multiple rows. */
+  public subscript(rows range: Range<Int>) -> Matrix {
+    get {
+      precondition(range.endIndex <= rows, "Invalid range")
+
+      var m = Matrix.zeros(rows: range.endIndex - range.startIndex, columns: columns)
+      for r in range {
+        for c in 0..<columns {
+          m[r - range.startIndex, c] = self[r, c]
+        }
+      }
+      return m
+    }
+    set(m) {
+      precondition(range.endIndex <= rows, "Invalid range")
+
+      for r in range {
+        for c in 0..<columns {
+          self[r, c] = m[r - range.startIndex, c]
+        }
+      }
+    }
+  }
+
   /* Get or set an entire column. */
   public subscript(column c: Int) -> Matrix {
     get {
@@ -326,6 +350,30 @@ extension Matrix {
       v.grid.withUnsafeBufferPointer { src in
         grid.withUnsafeMutableBufferPointer { dst in
           cblas_dcopy(Int32(rows), src.baseAddress, 1, dst.baseAddress + c, Int32(columns))
+        }
+      }
+    }
+  }
+
+  /* Get or set multiple columns. */
+  public subscript(columns range: Range<Int>) -> Matrix {
+    get {
+      precondition(range.endIndex <= columns, "Invalid range")
+
+      var m = Matrix.zeros(rows: rows, columns: range.endIndex - range.startIndex)
+      for r in 0..<rows {
+        for c in range {
+          m[r, c - range.startIndex] = self[r, c]
+        }
+      }
+      return m
+    }
+    set(m) {
+      precondition(range.endIndex <= columns, "Invalid range")
+
+      for r in 0..<rows {
+        for c in range {
+          self[r, c] = m[r, c - range.startIndex]
         }
       }
     }
