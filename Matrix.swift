@@ -348,6 +348,17 @@ extension Matrix {
   public var value: Double {
     return self[0, 0]
   }
+
+  /* Converts the matrix into a 2-dimensional array. */
+  public var array: [[Double]] {
+    var a = [[Double]](count: rows, repeatedValue: [Double](count: columns, repeatedValue: 0))
+    for r in 0..<rows {
+      for c in 0..<columns {
+        a[r][c] = self[r, c]
+      }
+    }
+    return a
+  }
 }
 
 // MARK: - Printable

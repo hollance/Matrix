@@ -416,6 +416,12 @@ extension MatrixTests {
     let m2 = Matrix(a2)
     XCTAssertEqual(m2.value, a2[0][0])
   }
+
+  func testToArray() {
+    let a = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]
+    let m = Matrix(a)
+    XCTAssertEqual(m.array, a)
+  }
 }
 
 // MARK: - Operations
