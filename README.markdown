@@ -76,17 +76,6 @@ Accelerate:
 - `subscript(rows: Range<Int>) -> Matrix`
 - `subscript(columns: Range<Int>) -> Matrix`
 
-Maybe:
-
-- Replace `load(data: [[Double]], range: Range<Int>, at: Int)` with a subscript operator: `subscript(columns: Range<Int>)` which takes a `Matrix` and copies it into the specified columns, or returns a matrix with just those columns.
-
-Maybe make the subscripts return regular arrays as well:
-
-- `subscript(row: Int) -> [Double]`
-- `subscript(rows: Range<Int>) -> [[Double]]`
-- `subscript(column: Int) -> [Double]`
-- `subscript(columns: Range<Int>) -> [[Double]]`
-
 Add new subscript:
 
 - `subscript(rows: Range<Int>, columns: Range<Int>) -> Matrix` - this sets or gets a submatrix given by the two ranges

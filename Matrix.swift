@@ -45,16 +45,7 @@ extension Matrix {
 
   /* Creates a matrix from an array: [[a, b], [c, d], [e, f]]. */
   public init(_ data: [[Double]]) {
-    let m = data.count
-    let n = data[0].count
-    self.init(rows: m, columns: n, repeatedValue: 0)
-    load(data, range: 0..<n, at: 0)
-
-    /*
-    for (i, row) in data.enumerate() {
-      grid.replaceRange(i*n..<i*n+Swift.min(m, row.count), with: row)
-    }
-    */
+    self.init(data, range: 0..<data[0].count)
   }
 
   /* Extracts one or more columns into a new matrix. */
@@ -62,7 +53,6 @@ extension Matrix {
     let m = data.count
     let n = range.endIndex - range.startIndex
     self.init(rows: m, columns: n, repeatedValue: 0)
-    load(data, range: range, at: 0)
 
     /*
     for (i, row) in data.enumerate() {
@@ -71,6 +61,14 @@ extension Matrix {
       }
     }
     */
+
+    grid.withUnsafeMutableBufferPointer { dst in
+      for (i, row) in data.enumerate() {
+        row.withUnsafeBufferPointer { src in
+          cblas_dcopy(Int32(n), src.baseAddress + range.startIndex, 1, dst.baseAddress + i*columns, 1)
+        }
+      }
+    }
   }
 
   /* Creates a matrix from a row vector or column vector. */
@@ -175,37 +173,6 @@ extension Matrix {
       }
     }
     return m
-  }
-}
-
-// MARK: - Modifying the matrix
-
-extension Matrix {
-  /*
-    Loads the contents of (part of) the array into the matrix starting at
-    the specified column. This is useful for when the matrix has more columns
-    than the array.
-  */
-  public mutating func load(data: [[Double]], range: Range<Int>, at: Int) {
-    precondition(data.count == rows, "Expected \(rows) rows in data")
-    precondition(range.endIndex - range.startIndex + at <= columns, "Out of bounds")
-
-    /*
-    for (i, row) in data.enumerate() {
-      for j in range {
-        self[i, j - range.startIndex + at] = row[j]
-      }
-    }
-    */
-
-    let n = range.endIndex - range.startIndex
-    grid.withUnsafeMutableBufferPointer { dst in
-      for (i, row) in data.enumerate() {
-        row.withUnsafeBufferPointer { src in
-          cblas_dcopy(Int32(n), src.baseAddress + range.startIndex, 1, dst.baseAddress + at + i*columns, 1)
-        }
-      }
-    }
   }
 }
 

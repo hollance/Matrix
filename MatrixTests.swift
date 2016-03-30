@@ -154,23 +154,6 @@ extension MatrixTests {
 
     assertEqual(v, v.tile(1))
   }
-  
-  func testLoad() {
-    let a = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]
-    var m = Matrix.zeros(rows: 3, columns: 4)
-
-    m.load(a, range: 0...1, at: 2)
-    assertEqual(m, Matrix([[0, 0, 1, 2], [0, 0, 3, 4], [0, 0, 5, 6]]))
-
-    m.load(a, range: 0...0, at: 3)
-    assertEqual(m, Matrix([[0, 0, 1, 1], [0, 0, 3, 3], [0, 0, 5, 5]]))
-
-    m.load(a, range: 0...1, at: 0)
-    assertEqual(m, Matrix([[1, 2, 1, 1], [3, 4, 3, 3], [5, 6, 5, 5]]))
-
-    m.load(a, range: 0...1, at: 1)
-    assertEqual(m, Matrix([[1, 1, 2, 1], [3, 3, 4, 3], [5, 5, 6, 5]]))
-  }
 }
 
 // MARK: - Subscripts
