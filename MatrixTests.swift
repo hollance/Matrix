@@ -410,11 +410,11 @@ extension MatrixTests {
   func testSubscriptScalar() {
     let a1 = [[7.0, 6.0], [5.0, 4.0], [3.0, 2.0]]
     let m1 = Matrix(a1)
-    XCTAssertEqual(m1.value, a1[0][0])
+    XCTAssertEqual(m1.scalar, a1[0][0])
     
     let a2 = [[9.0]]
     let m2 = Matrix(a2)
-    XCTAssertEqual(m2.value, a2[0][0])
+    XCTAssertEqual(m2.scalar, a2[0][0])
   }
 
   func testToArray() {

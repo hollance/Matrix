@@ -345,8 +345,8 @@ extension Matrix {
   }
 
   /* Useful for when the matrix is 1x1 or you want to get the first element. */
-  public var value: Double {
-    return self[0, 0]
+  public var scalar: Double {
+    return grid[0]
   }
 
   /* Converts the matrix into a 2-dimensional array. */
