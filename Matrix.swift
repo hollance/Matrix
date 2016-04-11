@@ -176,6 +176,31 @@ extension Matrix {
   }
 }
 
+extension Matrix {
+  /* Copies the contents of an NSData object into the matrix. */
+  public init(rows: Int, columns: Int, data: NSData) {
+    self.init(rows: rows, columns: columns, repeatedValue: 0)
+
+    grid.withUnsafeMutableBufferPointer { dst in
+      let src = UnsafePointer<Double>(data.bytes)
+      cblas_dcopy(Int32(rows * columns), src, 1, dst.baseAddress, 1)
+    }
+  }
+
+  /* Copies the contents of the matrix into an NSData object. */
+  public var data: NSData? {
+    if let data = NSMutableData(length: rows * columns * sizeof(Double)) {
+      grid.withUnsafeBufferPointer { src in
+        let dst = UnsafeMutablePointer<Double>(data.bytes)
+        cblas_dcopy(Int32(rows * columns), src.baseAddress, 1, dst, 1)
+      }
+      return data
+    } else {
+      return nil
+    }
+  }
+}
+
 // MARK: - Querying the matrix
 
 extension Matrix {
