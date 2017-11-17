@@ -441,9 +441,11 @@ extension Matrix {
       var work = [CDouble](repeating: 0, count: Int(lwork))
       var error: __CLPK_integer = 0
       var nc = __CLPK_integer(columns)
+      var m = nc
+      var n = nc
 
-      dgetrf_(&nc, &nc, ptr.baseAddress, &nc, &ipiv, &error)
-      dgetri_(&nc, ptr.baseAddress, &nc, &ipiv, &work, &lwork, &error)
+      dgetrf_(&m, &n, ptr.baseAddress, &nc, &ipiv, &error)
+      dgetri_(&m, ptr.baseAddress, &nc, &ipiv, &work, &lwork, &error)
 
       assert(error == 0, "Matrix not invertible")
     }

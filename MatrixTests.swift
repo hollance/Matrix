@@ -17,7 +17,7 @@ class MatrixTests: XCTestCase {
     XCTAssertEqual(m1.columns, m2.columns)
     for r in 0..<m1.rows {
       for c in 0..<m1.columns {
-        XCTAssertEqualWithAccuracy(m1[r, c], m2[r, c], accuracy: epsilon)
+        XCTAssertEqual(m1[r, c], m2[r, c], accuracy: epsilon)
       }
     }
   }
