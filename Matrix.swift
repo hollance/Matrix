@@ -36,7 +36,7 @@ extension Matrix {
   public init(rows: Int, columns: Int, repeatedValue: Double) {
     self.rows = rows
     self.columns = columns
-    self.grid = .init(count: rows * columns, repeatedValue: repeatedValue)
+    self.grid = .init(repeating: repeatedValue, count: rows * columns)
   }
 
   public init(size: (Int, Int), repeatedValue: Double) {
@@ -49,9 +49,9 @@ extension Matrix {
   }
 
   /* Extracts one or more columns into a new matrix. */
-  public init(_ data: [[Double]], range: Range<Int>) {
+  public init(_ data: [[Double]], range: CountableRange<Int>) {
     let m = data.count
-    let n = range.endIndex - range.startIndex
+    let n = range.upperBound - range.lowerBound
     self.init(rows: m, columns: n, repeatedValue: 0)
 
     /*
@@ -63,12 +63,16 @@ extension Matrix {
     */
 
     grid.withUnsafeMutableBufferPointer { dst in
-      for (i, row) in data.enumerate() {
+      for (i, row) in data.enumerated() {
         row.withUnsafeBufferPointer { src in
-          cblas_dcopy(Int32(n), src.baseAddress + range.startIndex, 1, dst.baseAddress + i*columns, 1)
+          cblas_dcopy(Int32(n), src.baseAddress! + range.lowerBound, 1, dst.baseAddress! + i*columns, 1)
         }
       }
     }
+  }
+
+  public init(_ data: [[Double]], range: CountableClosedRange<Int>) {
+    self.init(data, range: CountableRange(range))
   }
 
   /* Creates a matrix from a row vector or column vector. */
@@ -84,49 +88,53 @@ extension Matrix {
   }
 
   /* Creates a matrix containing the numbers in the specified range. */
-  public init(_ range: Range<Int>, isColumnVector: Bool = false) {
+  public init(_ range: CountableRange<Int>, isColumnVector: Bool = false) {
     if isColumnVector {
-      self.init(rows: 1, columns: range.endIndex - range.startIndex, repeatedValue: 0)
+      self.init(rows: 1, columns: range.upperBound - range.lowerBound, repeatedValue: 0)
       for c in range {
-        self[0, c - range.startIndex] = Double(c)
+        self[0, c - range.lowerBound] = Double(c)
       }
     } else {
-      self.init(rows: range.endIndex - range.startIndex, columns: 1, repeatedValue: 0)
+      self.init(rows: range.upperBound - range.lowerBound, columns: 1, repeatedValue: 0)
       for r in range {
-        self[r - range.startIndex, 0] = Double(r)
+        self[r - range.lowerBound, 0] = Double(r)
       }
     }
+  }
+
+  public init(_ range: CountableClosedRange<Int>, isColumnVector: Bool = false) {
+    self.init(CountableRange(range), isColumnVector: isColumnVector)
   }
 }
 
 extension Matrix {
   /* Creates a matrix where each element is 0. */
-  public static func zeros(rows rows: Int, columns: Int) -> Matrix {
+  public static func zeros(rows: Int, columns: Int) -> Matrix {
     return Matrix(rows: rows, columns: columns, repeatedValue: 0)
   }
 
-  public static func zeros(size size: (Int, Int)) -> Matrix {
+  public static func zeros(size: (Int, Int)) -> Matrix {
     return Matrix(size: size, repeatedValue: 0)
   }
 
   /* Creates a matrix where each element is 1. */
-  public static func ones(rows rows: Int, columns: Int) -> Matrix {
+  public static func ones(rows: Int, columns: Int) -> Matrix {
     return Matrix(rows: rows, columns: columns, repeatedValue: 1)
   }
 
-  public static func ones(size size: (Int, Int)) -> Matrix {
+  public static func ones(size: (Int, Int)) -> Matrix {
     return Matrix(size: size, repeatedValue: 1)
   }
 
   /* Creates a (square) identity matrix. */
-  public static func identity(size size: Int) -> Matrix {
+  public static func identity(size: Int) -> Matrix {
     var m = zeros(rows: size, columns: size)
     for i in 0..<size { m[i, i] = 1 }
     return m
   }
 
   /* Creates a matrix of random values between 0.0 and 1.0 (inclusive). */
-  public static func random(rows rows: Int, columns: Int) -> Matrix {
+  public static func random(rows: Int, columns: Int) -> Matrix {
     var m = zeros(rows: rows, columns: columns)
     for r in 0..<rows {
       for c in 0..<columns {
@@ -137,7 +145,7 @@ extension Matrix {
   }
 }
 
-extension Matrix: ArrayLiteralConvertible {
+extension Matrix: ExpressibleByArrayLiteral {
   /* Array literals are interpreted as row vectors. */
   public init(arrayLiteral: Double...) {
     self.rows = 1
@@ -148,7 +156,7 @@ extension Matrix: ArrayLiteralConvertible {
 
 extension Matrix {
   /* Duplicates a row vector across "d" rows. */
-  public func tile(d: Int) -> Matrix {
+  public func tile(_ d: Int) -> Matrix {
     precondition(rows == 1)
     var m = Matrix.zeros(rows: d, columns: columns)
 
@@ -162,13 +170,11 @@ extension Matrix {
 
     grid.withUnsafeBufferPointer { src in
       m.grid.withUnsafeMutableBufferPointer { dst in
-        var ptr = dst.baseAddress
-        for _ in 0..<d {
+        for i in 0..<d {
           // Alternatively, use memcpy instead of BLAS.
           //memcpy(ptr, src.baseAddress, columns * sizeof(Double))
 
-          cblas_dcopy(Int32(columns), src.baseAddress, 1, ptr, 1)
-          ptr += columns
+          cblas_dcopy(Int32(columns), src.baseAddress, 1, dst.baseAddress?.advanced(by: columns * i), 1)
         }
       }
     }
@@ -182,7 +188,7 @@ extension Matrix {
   public var size: (Int, Int) {
     return (rows, columns)
   }
-  
+
   public var length: Int {
     return Swift.max(rows, columns)
   }
@@ -217,7 +223,7 @@ extension Matrix {
 
       grid.withUnsafeBufferPointer { src in
         v.grid.withUnsafeMutableBufferPointer { dst in
-          cblas_dcopy(Int32(columns), src.baseAddress + r*columns, 1, dst.baseAddress, 1)
+          cblas_dcopy(Int32(columns), src.baseAddress! + r*columns, 1, dst.baseAddress, 1)
         }
       }
       return v
@@ -233,33 +239,42 @@ extension Matrix {
       
       v.grid.withUnsafeBufferPointer { src in
         grid.withUnsafeMutableBufferPointer { dst in
-          cblas_dcopy(Int32(columns), src.baseAddress, 1, dst.baseAddress + r*columns, 1)
+          cblas_dcopy(Int32(columns), src.baseAddress, 1, dst.baseAddress! + r*columns, 1)
         }
       }
     }
   }
 
   /* Get or set multiple rows. */
-  public subscript(rows range: Range<Int>) -> Matrix {
+  public subscript(rows range: CountableRange<Int>) -> Matrix {
     get {
-      precondition(range.endIndex <= rows, "Invalid range")
+      precondition(range.upperBound <= rows, "Invalid range")
 
-      var m = Matrix.zeros(rows: range.endIndex - range.startIndex, columns: columns)
+      var m = Matrix.zeros(rows: range.upperBound - range.lowerBound, columns: columns)
       for r in range {
         for c in 0..<columns {
-          m[r - range.startIndex, c] = self[r, c]
+          m[r - range.lowerBound, c] = self[r, c]
         }
       }
       return m
     }
     set(m) {
-      precondition(range.endIndex <= rows, "Invalid range")
+      precondition(range.upperBound <= rows, "Invalid range")
 
       for r in range {
         for c in 0..<columns {
-          self[r, c] = m[r - range.startIndex, c]
+          self[r, c] = m[r - range.lowerBound, c]
         }
       }
+    }
+  }
+
+  public subscript(rows range: CountableClosedRange<Int>) -> Matrix {
+    get {
+      return self[rows: CountableRange(range)]
+    }
+    set(m) {
+      self[rows: CountableRange(range)] = m
     }
   }
 
@@ -277,8 +292,8 @@ extension Matrix {
 
     grid.withUnsafeBufferPointer { src in
       m.grid.withUnsafeMutableBufferPointer { dst in
-        for (i, r) in rowIndices.enumerate() {
-          cblas_dcopy(Int32(columns), src.baseAddress + r*columns, 1, dst.baseAddress + i*columns, 1)
+        for (i, r) in rowIndices.enumerated() {
+          cblas_dcopy(Int32(columns), src.baseAddress! + r*columns, 1, dst.baseAddress! + i*columns, 1)
         }
       }
     }
@@ -298,7 +313,7 @@ extension Matrix {
 
       grid.withUnsafeBufferPointer { src in
         v.grid.withUnsafeMutableBufferPointer { dst in
-          cblas_dcopy(Int32(rows), src.baseAddress + c, Int32(columns), dst.baseAddress, 1)
+          cblas_dcopy(Int32(rows), src.baseAddress! + c, Int32(columns), dst.baseAddress, 1)
         }
       }
       return v
@@ -314,33 +329,42 @@ extension Matrix {
       
       v.grid.withUnsafeBufferPointer { src in
         grid.withUnsafeMutableBufferPointer { dst in
-          cblas_dcopy(Int32(rows), src.baseAddress, 1, dst.baseAddress + c, Int32(columns))
+          cblas_dcopy(Int32(rows), src.baseAddress, 1, dst.baseAddress! + c, Int32(columns))
         }
       }
     }
   }
 
   /* Get or set multiple columns. */
-  public subscript(columns range: Range<Int>) -> Matrix {
+  public subscript(columns range: CountableRange<Int>) -> Matrix {
     get {
-      precondition(range.endIndex <= columns, "Invalid range")
+      precondition(range.upperBound <= columns, "Invalid range")
 
-      var m = Matrix.zeros(rows: rows, columns: range.endIndex - range.startIndex)
+      var m = Matrix.zeros(rows: rows, columns: range.upperBound - range.lowerBound)
       for r in 0..<rows {
         for c in range {
-          m[r, c - range.startIndex] = self[r, c]
+          m[r, c - range.lowerBound] = self[r, c]
         }
       }
       return m
     }
     set(m) {
-      precondition(range.endIndex <= columns, "Invalid range")
+      precondition(range.upperBound <= columns, "Invalid range")
 
       for r in 0..<rows {
         for c in range {
-          self[r, c] = m[r, c - range.startIndex]
+          self[r, c] = m[r, c - range.lowerBound]
         }
       }
+    }
+  }
+
+  public subscript(columns range: CountableClosedRange<Int>) -> Matrix {
+    get {
+      return self[columns: CountableRange(range)]
+    }
+    set(m) {
+      self[columns: CountableRange(range)] = m
     }
   }
 
@@ -351,7 +375,7 @@ extension Matrix {
 
   /* Converts the matrix into a 2-dimensional array. */
   public var array: [[Double]] {
-    var a = [[Double]](count: rows, repeatedValue: [Double](count: columns, repeatedValue: 0))
+    var a = [[Double]](repeating: [Double](repeating: 0, count: columns), count: rows)
     for r in 0..<rows {
       for c in 0..<columns {
         a[r][c] = self[r, c]
@@ -368,8 +392,8 @@ extension Matrix: CustomStringConvertible {
     var description = ""
 
     for i in 0..<rows {
-      let contents = (0..<columns).map{ String(format: "%20.10f", self[i, $0]) }.joinWithSeparator(" ")
-      
+      let contents = (0..<columns).map{ String(format: "%20.10f", self[i, $0]) }.joined(separator: " ")
+
       switch (i, rows) {
       case (0, 1):
         description += "( \(contents) )\n"
@@ -388,11 +412,11 @@ extension Matrix: CustomStringConvertible {
 // MARK: - SequenceType
 
 /* Lets you iterate through the rows of the matrix. */
-extension Matrix: SequenceType {
-  public func generate() -> AnyGenerator<ArraySlice<Double>> {
+extension Matrix: Sequence {
+  public func makeIterator() -> AnyIterator<ArraySlice<Double>> {
     let endIndex = rows * columns
     var nextRowStartIndex = 0
-    return AnyGenerator {
+    return AnyIterator {
       if nextRowStartIndex == endIndex {
         return nil
       } else {
@@ -412,14 +436,16 @@ extension Matrix {
 
     var results = self
     results.grid.withUnsafeMutableBufferPointer { ptr in
-      var ipiv = [__CLPK_integer](count: rows * rows, repeatedValue: 0)
+      var ipiv = [__CLPK_integer](repeating: 0, count: rows * rows)
       var lwork = __CLPK_integer(columns * columns)
-      var work = [CDouble](count: Int(lwork), repeatedValue: 0)
+      var work = [CDouble](repeating: 0, count: Int(lwork))
       var error: __CLPK_integer = 0
       var nc = __CLPK_integer(columns)
+      var m = nc
+      var n = nc
 
-      dgetrf_(&nc, &nc, ptr.baseAddress, &nc, &ipiv, &error)
-      dgetri_(&nc, ptr.baseAddress, &nc, &ipiv, &work, &lwork, &error)
+      dgetrf_(&m, &n, ptr.baseAddress, &nc, &ipiv, &error)
+      dgetri_(&m, ptr.baseAddress, &nc, &ipiv, &work, &lwork, &error)
 
       assert(error == 0, "Matrix not invertible")
     }
@@ -432,14 +458,14 @@ extension Matrix {
     var results = Matrix(rows: columns, columns: rows, repeatedValue: 0)
     grid.withUnsafeBufferPointer { srcPtr in
       results.grid.withUnsafeMutableBufferPointer { dstPtr in
-        vDSP_mtransD(srcPtr.baseAddress, 1, dstPtr.baseAddress, 1, vDSP_Length(results.rows), vDSP_Length(results.columns))
+        vDSP_mtransD(srcPtr.baseAddress!, 1, dstPtr.baseAddress!, 1, vDSP_Length(results.rows), vDSP_Length(results.columns))
       }
     }
     return results
   }
 }
 
-postfix operator ′ {}
+postfix operator ′
 public postfix func ′ (value: Matrix) -> Matrix {
   return value.transpose()
 }
@@ -447,13 +473,13 @@ public postfix func ′ (value: Matrix) -> Matrix {
 // MARK: - Arithmetic
 
 /*
-  Element-by-element addition.
+ Element-by-element addition.
 
-  Either:
-  - both matrices have the same size
-  - rhs is a row vector with an equal number of columns as lhs
-  - rhs is a column vector with an equal number of rows as lhs
-*/
+ Either:
+ - both matrices have the same size
+ - rhs is a row vector with an equal number of columns as lhs
+ - rhs is a column vector with an equal number of rows as lhs
+ */
 public func + (lhs: Matrix, rhs: Matrix) -> Matrix {
   if lhs.columns == rhs.columns {
     if rhs.rows == 1 {   // rhs is row vector
@@ -472,7 +498,7 @@ public func + (lhs: Matrix, rhs: Matrix) -> Matrix {
         results.grid.withUnsafeMutableBufferPointer{ dst in
           for c in 0..<lhs.columns {
             var v = rhs[c]
-            vDSP_vsaddD(src.baseAddress + c, lhs.columns, &v, dst.baseAddress + c, lhs.columns, vDSP_Length(lhs.rows))
+            vDSP_vsaddD(src.baseAddress! + c, lhs.columns, &v, dst.baseAddress! + c, lhs.columns, vDSP_Length(lhs.rows))
           }
         }
       }
@@ -503,7 +529,7 @@ public func + (lhs: Matrix, rhs: Matrix) -> Matrix {
       results.grid.withUnsafeMutableBufferPointer{ dst in
         for r in 0..<lhs.rows {
           var v = rhs[r]
-          vDSP_vsaddD(src.baseAddress + r*lhs.columns, 1, &v, dst.baseAddress + r*lhs.columns, 1, vDSP_Length(lhs.columns))
+          vDSP_vsaddD(src.baseAddress! + r*lhs.columns, 1, &v, dst.baseAddress! + r*lhs.columns, 1, vDSP_Length(lhs.columns))
         }
       }
     }
@@ -513,7 +539,7 @@ public func + (lhs: Matrix, rhs: Matrix) -> Matrix {
   fatalError("Cannot add \(lhs.rows)×\(lhs.columns) matrix and \(rhs.rows)×\(rhs.columns) matrix")
 }
 
-public func += (inout lhs: Matrix, rhs: Matrix) {
+public func += (lhs: inout Matrix, rhs: Matrix) {
   lhs = lhs + rhs
 }
 
@@ -533,13 +559,13 @@ public func + (lhs: Matrix, rhs: Double) -> Matrix {
   lhs.grid.withUnsafeBufferPointer { src in
     results.grid.withUnsafeMutableBufferPointer { dst in
       var scalar = rhs
-      vDSP_vsaddD(src.baseAddress, 1, &scalar, dst.baseAddress, 1, vDSP_Length(lhs.rows * lhs.columns))
+      vDSP_vsaddD(src.baseAddress!, 1, &scalar, dst.baseAddress!, 1, vDSP_Length(lhs.rows * lhs.columns))
     }
   }
   return results
 }
 
-public func += (inout lhs: Matrix, rhs: Double) {
+public func += (lhs: inout Matrix, rhs: Double) {
   lhs = lhs + rhs
 }
 
@@ -548,14 +574,14 @@ public func + (lhs: Double, rhs: Matrix) -> Matrix {
   return rhs + lhs
 }
 
-/* 
-  Element-by-element subtraction.
-  
-  Either:
-  - both matrices have the same size
-  - rhs is a row vector with an equal number of columns as lhs
-  - rhs is a column vector with an equal number of rows as lhs
-*/
+/*
+ Element-by-element subtraction.
+
+ Either:
+ - both matrices have the same size
+ - rhs is a row vector with an equal number of columns as lhs
+ - rhs is a column vector with an equal number of rows as lhs
+ */
 public func - (lhs: Matrix, rhs: Matrix) -> Matrix {
   if lhs.columns == rhs.columns {
     if rhs.rows == 1 {   // rhs is row vector
@@ -574,7 +600,7 @@ public func - (lhs: Matrix, rhs: Matrix) -> Matrix {
         results.grid.withUnsafeMutableBufferPointer{ dst in
           for c in 0..<lhs.columns {
             var v = -rhs[c]
-            vDSP_vsaddD(src.baseAddress + c, lhs.columns, &v, dst.baseAddress + c, lhs.columns, vDSP_Length(lhs.rows))
+            vDSP_vsaddD(src.baseAddress! + c, lhs.columns, &v, dst.baseAddress! + c, lhs.columns, vDSP_Length(lhs.rows))
           }
         }
       }
@@ -606,7 +632,7 @@ public func - (lhs: Matrix, rhs: Matrix) -> Matrix {
       results.grid.withUnsafeMutableBufferPointer{ dst in
         for r in 0..<lhs.rows {
           var v = -rhs[r]
-          vDSP_vsaddD(src.baseAddress + r*lhs.columns, 1, &v, dst.baseAddress + r*lhs.columns, 1, vDSP_Length(lhs.columns))
+          vDSP_vsaddD(src.baseAddress! + r*lhs.columns, 1, &v, dst.baseAddress! + r*lhs.columns, 1, vDSP_Length(lhs.columns))
         }
       }
     }
@@ -616,7 +642,7 @@ public func - (lhs: Matrix, rhs: Matrix) -> Matrix {
   fatalError("Cannot subtract \(lhs.rows)×\(lhs.columns) matrix and \(rhs.rows)×\(rhs.columns) matrix")
 }
 
-public func -= (inout lhs: Matrix, rhs: Matrix) {
+public func -= (lhs: inout Matrix, rhs: Matrix) {
   lhs = lhs - rhs
 }
 
@@ -625,7 +651,7 @@ public func - (lhs: Matrix, rhs: Double) -> Matrix {
   return lhs + (-rhs)
 }
 
-public func -= (inout lhs: Matrix, rhs: Double) {
+public func -= (lhs: inout Matrix, rhs: Double) {
   lhs = lhs - rhs
 }
 
@@ -645,8 +671,8 @@ public func - (lhs: Double, rhs: Matrix) -> Matrix {
   var scalar = lhs
   let length = vDSP_Length(rhs.rows * rhs.columns)
   results.grid.withUnsafeMutableBufferPointer { ptr in
-    vDSP_vnegD(ptr.baseAddress, 1, ptr.baseAddress, 1, length)
-    vDSP_vsaddD(ptr.baseAddress, 1, &scalar, ptr.baseAddress, 1, length)
+    vDSP_vnegD(ptr.baseAddress!, 1, ptr.baseAddress!, 1, length)
+    vDSP_vsaddD(ptr.baseAddress!, 1, &scalar, ptr.baseAddress!, 1, length)
   }
   return results
 }
@@ -666,13 +692,13 @@ prefix public func -(m: Matrix) -> Matrix {
   var results = m
   m.grid.withUnsafeBufferPointer { src in
     results.grid.withUnsafeMutableBufferPointer { dst in
-      vDSP_vnegD(src.baseAddress, 1, dst.baseAddress, 1, vDSP_Length(m.rows * m.columns))
+      vDSP_vnegD(src.baseAddress!, 1, dst.baseAddress!, 1, vDSP_Length(m.rows * m.columns))
     }
   }
   return results
 }
 
-infix operator <*> { associativity left precedence 150 }
+infix operator <*> : MultiplicationPrecedence
 
 /* Multiplies two matrices, or a matrix with a vector. */
 public func <*> (lhs: Matrix, rhs: Matrix) -> Matrix {
@@ -689,14 +715,14 @@ public func <*> (lhs: Matrix, rhs: Matrix) -> Matrix {
   return results
 }
 
-/* 
-  Multiplies each element of the lhs matrix by each element of the rhs matrix.
-  
-  Either:
-  - both matrices have the same size
-  - rhs is a row vector with an equal number of columns as lhs
-  - rhs is a column vector with an equal number of rows as lhs
-*/
+/*
+ Multiplies each element of the lhs matrix by each element of the rhs matrix.
+
+ Either:
+ - both matrices have the same size
+ - rhs is a row vector with an equal number of columns as lhs
+ - rhs is a column vector with an equal number of rows as lhs
+ */
 public func * (lhs: Matrix, rhs: Matrix) -> Matrix {
   if lhs.columns == rhs.columns {
     if rhs.rows == 1 {   // rhs is row vector
@@ -715,7 +741,7 @@ public func * (lhs: Matrix, rhs: Matrix) -> Matrix {
         results.grid.withUnsafeMutableBufferPointer{ dst in
           for c in 0..<lhs.columns {
             var v = rhs[c]
-            vDSP_vsmulD(src.baseAddress + c, lhs.columns, &v, dst.baseAddress + c, lhs.columns, vDSP_Length(lhs.rows))
+            vDSP_vsmulD(src.baseAddress! + c, lhs.columns, &v, dst.baseAddress! + c, lhs.columns, vDSP_Length(lhs.rows))
           }
         }
       }
@@ -736,7 +762,7 @@ public func * (lhs: Matrix, rhs: Matrix) -> Matrix {
       rhs.grid.withUnsafeBufferPointer{ srcX in
         lhs.grid.withUnsafeBufferPointer{ srcY in
           results.grid.withUnsafeMutableBufferPointer{ dstZ in
-            vDSP_vmulD(srcX.baseAddress, 1, srcY.baseAddress, 1, dstZ.baseAddress, 1, vDSP_Length(lhs.rows * lhs.columns))
+            vDSP_vmulD(srcX.baseAddress!, 1, srcY.baseAddress!, 1, dstZ.baseAddress!, 1, vDSP_Length(lhs.rows * lhs.columns))
           }
         }
       }
@@ -759,7 +785,7 @@ public func * (lhs: Matrix, rhs: Matrix) -> Matrix {
       results.grid.withUnsafeMutableBufferPointer{ dst in
         for r in 0..<lhs.rows {
           var v = rhs[r]
-          vDSP_vsmulD(src.baseAddress + r*lhs.columns, 1, &v, dst.baseAddress + r*lhs.columns, 1, vDSP_Length(lhs.columns))
+          vDSP_vsmulD(src.baseAddress! + r*lhs.columns, 1, &v, dst.baseAddress! + r*lhs.columns, 1, vDSP_Length(lhs.columns))
         }
       }
     }
@@ -783,7 +809,7 @@ public func * (lhs: Double, rhs: Matrix) -> Matrix {
   return rhs * lhs
 }
 
-infix operator </> { associativity left precedence 150 }
+infix operator </> : MultiplicationPrecedence
 
 /* Divides a matrix by another. This is the same as multiplying with the inverse. */
 public func </> (lhs: Matrix, rhs: Matrix) -> Matrix {
@@ -792,14 +818,14 @@ public func </> (lhs: Matrix, rhs: Matrix) -> Matrix {
   return lhs <*> inv
 }
 
-/* 
-  Divides each element of the lhs matrix by each element of the rhs matrix.
+/*
+ Divides each element of the lhs matrix by each element of the rhs matrix.
 
-  Either:
-  - both matrices have the same size
-  - rhs is a row vector with an equal number of columns as lhs
-  - rhs is a column vector with an equal number of rows as lhs
-*/
+ Either:
+ - both matrices have the same size
+ - rhs is a row vector with an equal number of columns as lhs
+ - rhs is a column vector with an equal number of rows as lhs
+ */
 public func / (lhs: Matrix, rhs: Matrix) -> Matrix {
   if lhs.columns == rhs.columns {
     if rhs.rows == 1 {   // rhs is row vector
@@ -818,7 +844,7 @@ public func / (lhs: Matrix, rhs: Matrix) -> Matrix {
         results.grid.withUnsafeMutableBufferPointer{ dst in
           for c in 0..<lhs.columns {
             var v = rhs[c]
-            vDSP_vsdivD(src.baseAddress + c, lhs.columns, &v, dst.baseAddress + c, lhs.columns, vDSP_Length(lhs.rows))
+            vDSP_vsdivD(src.baseAddress! + c, lhs.columns, &v, dst.baseAddress! + c, lhs.columns, vDSP_Length(lhs.rows))
           }
         }
       }
@@ -839,7 +865,7 @@ public func / (lhs: Matrix, rhs: Matrix) -> Matrix {
       rhs.grid.withUnsafeBufferPointer{ srcX in
         lhs.grid.withUnsafeBufferPointer{ srcY in
           results.grid.withUnsafeMutableBufferPointer{ dstZ in
-            vDSP_vdivD(srcX.baseAddress, 1, srcY.baseAddress, 1, dstZ.baseAddress, 1, vDSP_Length(lhs.rows * lhs.columns))
+            vDSP_vdivD(srcX.baseAddress!, 1, srcY.baseAddress!, 1, dstZ.baseAddress!, 1, vDSP_Length(lhs.rows * lhs.columns))
           }
         }
       }
@@ -862,7 +888,7 @@ public func / (lhs: Matrix, rhs: Matrix) -> Matrix {
       results.grid.withUnsafeMutableBufferPointer{ dst in
         for r in 0..<lhs.rows {
           var v = rhs[r]
-          vDSP_vsdivD(src.baseAddress + r*lhs.columns, 1, &v, dst.baseAddress + r*lhs.columns, 1, vDSP_Length(lhs.columns))
+          vDSP_vsdivD(src.baseAddress! + r*lhs.columns, 1, &v, dst.baseAddress! + r*lhs.columns, 1, vDSP_Length(lhs.columns))
         }
       }
     }
@@ -897,7 +923,7 @@ public func / (lhs: Double, rhs: Matrix) -> Matrix {
   rhs.grid.withUnsafeBufferPointer { src in
     results.grid.withUnsafeMutableBufferPointer { dst in
       var scalar = lhs
-      vDSP_svdivD(&scalar, src.baseAddress, 1, dst.baseAddress, 1, vDSP_Length(rhs.rows * rhs.columns))
+      vDSP_svdivD(&scalar, src.baseAddress!, 1, dst.baseAddress!, 1, vDSP_Length(rhs.rows * rhs.columns))
     }
   }
   return results
@@ -922,7 +948,7 @@ extension Matrix {
     grid.withUnsafeBufferPointer { src in
       result.grid.withUnsafeMutableBufferPointer { dst in
         var size = Int32(rows * columns)
-        vvexp(dst.baseAddress, src.baseAddress, &size)
+        vvexp(dst.baseAddress!, src.baseAddress!, &size)
       }
     }
     return result
@@ -944,14 +970,14 @@ extension Matrix {
     grid.withUnsafeBufferPointer { src in
       result.grid.withUnsafeMutableBufferPointer { dst in
         var size = Int32(rows * columns)
-        vvlog(dst.baseAddress, src.baseAddress, &size)
+        vvlog(dst.baseAddress!, src.baseAddress!, &size)
       }
     }
     return result
   }
 
   /* Raised each element of the matrix to power alpha. */
-  public func pow(alpha: Double) -> Matrix {
+  public func pow(_ alpha: Double) -> Matrix {
     /*
     var result = m
     for r in 0..<m.rows {
@@ -961,16 +987,16 @@ extension Matrix {
     }
     return result
     */
-    
+
     var result = self
     grid.withUnsafeBufferPointer { src in
       result.grid.withUnsafeMutableBufferPointer { dst in
         if alpha == 2 {
-          vDSP_vsqD(src.baseAddress, 1, dst.baseAddress, 1, vDSP_Length(rows * columns))
+          vDSP_vsqD(src.baseAddress!, 1, dst.baseAddress!, 1, vDSP_Length(rows * columns))
         } else {
           var size = Int32(rows * columns)
           var exponent = alpha
-          vvpows(dst.baseAddress, &exponent, src.baseAddress, &size)
+          vvpows(dst.baseAddress!, &exponent, src.baseAddress!, &size)
         }
       }
     }
@@ -993,7 +1019,7 @@ extension Matrix {
     grid.withUnsafeBufferPointer { src in
       result.grid.withUnsafeMutableBufferPointer { dst in
         var size = Int32(rows * columns)
-        vvsqrt(dst.baseAddress, src.baseAddress, &size)
+        vvsqrt(dst.baseAddress!, src.baseAddress!, &size)
       }
     }
     return result
@@ -1012,7 +1038,7 @@ extension Matrix {
     */
     
     grid.withUnsafeBufferPointer { src in
-      vDSP_sveD(src.baseAddress, 1, &result, vDSP_Length(rows * columns))
+      vDSP_sveD(src.baseAddress!, 1, &result, vDSP_Length(rows * columns))
     }
     return result
   }
@@ -1032,7 +1058,7 @@ extension Matrix {
     grid.withUnsafeBufferPointer { src in
       result.grid.withUnsafeMutableBufferPointer { dst in
         for r in 0..<rows {
-          vDSP_sveD(src.baseAddress + r*columns, 1, dst.baseAddress + r, vDSP_Length(columns))
+          vDSP_sveD(src.baseAddress! + r*columns, 1, dst.baseAddress! + r, vDSP_Length(columns))
         }
       }
     }
@@ -1054,7 +1080,7 @@ extension Matrix {
     grid.withUnsafeBufferPointer { src in
       result.grid.withUnsafeMutableBufferPointer { dst in
         for c in 0..<columns {
-          vDSP_sveD(src.baseAddress + c, columns, dst.baseAddress + c, vDSP_Length(rows))
+          vDSP_sveD(src.baseAddress! + c, columns, dst.baseAddress! + c, vDSP_Length(rows))
         }
       }
     }
@@ -1081,7 +1107,7 @@ extension Matrix {
     var result = 0.0
     var index: vDSP_Length = 0
     grid.withUnsafeBufferPointer { ptr in
-      vDSP_minviD(ptr.baseAddress + r*columns, 1, &result, &index, vDSP_Length(columns))
+      vDSP_minviD(ptr.baseAddress! + r*columns, 1, &result, &index, vDSP_Length(columns))
     }
     return (result, Int(index))
   }
@@ -1102,7 +1128,7 @@ extension Matrix {
     var result = 0.0
     var index: vDSP_Length = 0
     grid.withUnsafeBufferPointer { ptr in
-      vDSP_maxviD(ptr.baseAddress + r*columns, 1, &result, &index, vDSP_Length(columns))
+      vDSP_maxviD(ptr.baseAddress! + r*columns, 1, &result, &index, vDSP_Length(columns))
     }
     return (result, Int(index))
   }
@@ -1139,7 +1165,7 @@ extension Matrix {
     var result = 0.0
     var index: vDSP_Length = 0
     grid.withUnsafeBufferPointer { ptr in
-      vDSP_minviD(ptr.baseAddress + c, columns, &result, &index, vDSP_Length(rows))
+      vDSP_minviD(ptr.baseAddress! + c, columns, &result, &index, vDSP_Length(rows))
     }
     return (result, Int(index) / columns)
   }
@@ -1160,7 +1186,7 @@ extension Matrix {
     var result = 0.0
     var index: vDSP_Length = 0
     grid.withUnsafeBufferPointer { ptr in
-      vDSP_maxviD(ptr.baseAddress + c, columns, &result, &index, vDSP_Length(rows))
+      vDSP_maxviD(ptr.baseAddress! + c, columns, &result, &index, vDSP_Length(rows))
     }
     return (result, Int(index) / columns)
   }
@@ -1185,7 +1211,7 @@ extension Matrix {
     var result = 0.0
     var index: vDSP_Length = 0
     grid.withUnsafeBufferPointer { ptr in
-      vDSP_minviD(ptr.baseAddress, 1, &result, &index, vDSP_Length(rows * columns))
+      vDSP_minviD(ptr.baseAddress!, 1, &result, &index, vDSP_Length(rows * columns))
     }
     let r = Int(index) / rows
     let c = Int(index) - r * columns
@@ -1196,7 +1222,7 @@ extension Matrix {
     var result = 0.0
     var index: vDSP_Length = 0
     grid.withUnsafeBufferPointer { ptr in
-      vDSP_maxviD(ptr.baseAddress, 1, &result, &index, vDSP_Length(rows * columns))
+      vDSP_maxviD(ptr.baseAddress!, 1, &result, &index, vDSP_Length(rows * columns))
     }
     let r = Int(index) / rows
     let c = Int(index) - r * columns
@@ -1212,13 +1238,13 @@ extension Matrix {
     return mean(0..<columns)
   }
 
-  /* 
-    Calculates the mean for some of the matrix's columns.
+  /*
+   Calculates the mean for some of the matrix's columns.
 
-    Note: This returns a matrix of the same size as the original one. 
-    Any columns not in the range are set to 0.
-  */
-  public func mean(range: Range<Int>) -> Matrix {
+   Note: This returns a matrix of the same size as the original one.
+   Any columns not in the range are set to 0.
+   */
+  public func mean(_ range: CountableRange<Int>) -> Matrix {
     /*
     var mu = Matrix.zeros(rows: 1, columns: columns)
     for r in 0..<rows {
@@ -1235,8 +1261,8 @@ extension Matrix {
     var mu = Matrix.zeros(rows: 1, columns: columns)
     grid.withUnsafeBufferPointer{ srcBuf in
       mu.grid.withUnsafeMutableBufferPointer{ dstBuf in
-        var srcPtr = srcBuf.baseAddress + range.startIndex
-        var dstPtr = dstBuf.baseAddress + range.startIndex
+        var srcPtr = srcBuf.baseAddress! + range.lowerBound
+        var dstPtr = dstBuf.baseAddress! + range.lowerBound
         for _ in range {
           vDSP_meanvD(srcPtr, columns, dstPtr, vDSP_Length(rows))
           srcPtr += 1
@@ -1247,18 +1273,28 @@ extension Matrix {
     return mu
   }
 
+  /*
+   Calculates the mean for some of the matrix's columns.
+
+   Note: This returns a matrix of the same size as the original one.
+   Any columns not in the range are set to 0.
+   */
+  public func mean(_ range: CountableClosedRange<Int>) -> Matrix {
+    return mean(CountableRange(range))
+  }
+
   /* Calculates the standard deviation for each of the matrix's columns. */
   public func std() -> Matrix {
     return std(0..<columns)
   }
 
-  /* 
-    Calculates the standard deviation for some of the matrix's columns.
-      
-    Note: This returns a matrix of the same size as the original one. 
-    Any columns not in the range are set to 0.
-  */
-  public func std(range: Range<Int>) -> Matrix {
+  /*
+   Calculates the standard deviation for some of the matrix's columns.
+
+   Note: This returns a matrix of the same size as the original one.
+   Any columns not in the range are set to 0.
+   */
+  public func std(_ range: CountableRange<Int>) -> Matrix {
     let mu = mean(range)
 
     /*
@@ -1282,16 +1318,16 @@ extension Matrix {
     grid.withUnsafeBufferPointer{ buf1 in
       temp.grid.withUnsafeMutableBufferPointer{ buf2 in
         sigma.grid.withUnsafeMutableBufferPointer{ buf3 in
-          var ptr1 = buf1.baseAddress + range.startIndex
-          var ptr2 = buf2.baseAddress + range.startIndex
-          var ptr3 = buf3.baseAddress + range.startIndex
-          
+          var ptr1 = buf1.baseAddress! + range.lowerBound
+          var ptr2 = buf2.baseAddress! + range.lowerBound
+          var ptr3 = buf3.baseAddress! + range.lowerBound
+
           for c in range {
             var v = -mu[c]
             vDSP_vsaddD(ptr1, columns, &v, ptr2, columns, vDSP_Length(rows))
             vDSP_vsqD(ptr2, columns, ptr2, columns, vDSP_Length(rows))
             vDSP_sveD(ptr2, columns, ptr3, vDSP_Length(rows))
-            
+
             ptr1 += 1
             ptr2 += 1
             ptr3 += 1
@@ -1306,5 +1342,15 @@ extension Matrix {
     sigma = sigma.sqrt()
 
     return sigma
+  }
+
+  /*
+   Calculates the standard deviation for some of the matrix's columns.
+   
+   Note: This returns a matrix of the same size as the original one.
+   Any columns not in the range are set to 0.
+   */
+  public func std(_ range: CountableClosedRange<Int>) -> Matrix{
+    return std(CountableRange(range))
   }
 }
