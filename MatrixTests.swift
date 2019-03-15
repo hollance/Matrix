@@ -424,12 +424,6 @@ extension MatrixTests {
   }
 }
 
-extension Array: Equatable {
-	public static func ==(lhs: Array, rhs: Array) -> Bool {
-		return lhs as NSArray == rhs as NSArray
-	}
-}
-
 // MARK: - Operations
 
 extension MatrixTests {

@@ -62,11 +62,9 @@ extension Matrix {
     }
     */
 
-    grid.withUnsafeMutableBufferPointer { dst in
-      for (i, row) in data.enumerated() {
-        row.withUnsafeBufferPointer { src in
-          cblas_dcopy(Int32(n), src.baseAddress! + range.lowerBound, 1, dst.baseAddress! + i*columns, 1)
-        }
+    for (i, row) in data.enumerated() {
+      row.withUnsafeBufferPointer { src in
+        cblas_dcopy(Int32(n), src.baseAddress! + range.lowerBound, 1, &grid + i*columns, 1)
       }
     }
   }
@@ -172,7 +170,7 @@ extension Matrix {
       m.grid.withUnsafeMutableBufferPointer { dst in
         for i in 0..<d {
           // Alternatively, use memcpy instead of BLAS.
-          //memcpy(ptr, src.baseAddress, columns * sizeof(Double))
+          //memcpy(ptr, src.baseAddress, columns * MemoryLayout<Double>.stride)
 
           cblas_dcopy(Int32(columns), src.baseAddress, 1, dst.baseAddress?.advanced(by: columns * i), 1)
         }
@@ -185,19 +183,20 @@ extension Matrix {
 extension Matrix {
   /* Copies the contents of an NSData object into the matrix. */
   public init(rows: Int, columns: Int, data: NSData) {
+    precondition(data.length >= rows * columns * MemoryLayout<Double>.stride)
     self.init(rows: rows, columns: columns, repeatedValue: 0)
 
     grid.withUnsafeMutableBufferPointer { dst in
-      let src = UnsafePointer<Double>(data.bytes)
+      let src = UnsafePointer<Double>(OpaquePointer(data.bytes))
       cblas_dcopy(Int32(rows * columns), src, 1, dst.baseAddress, 1)
     }
   }
 
   /* Copies the contents of the matrix into an NSData object. */
   public var data: NSData? {
-    if let data = NSMutableData(length: rows * columns * sizeof(Double)) {
+    if let data = NSMutableData(length: rows * columns * MemoryLayout<Double>.stride) {
       grid.withUnsafeBufferPointer { src in
-        let dst = UnsafeMutablePointer<Double>(data.bytes)
+        let dst = UnsafeMutablePointer<Double>(OpaquePointer(data.bytes))
         cblas_dcopy(Int32(rows * columns), src.baseAddress, 1, dst, 1)
       }
       return data
@@ -214,6 +213,12 @@ extension Matrix {
     return (rows, columns)
   }
 
+  /* Returns the total number of elements in the matrix. */
+  public var count: Int {
+    return rows * columns
+  }
+
+  /* Returns the largest dimension. */
   public var length: Int {
     return Swift.max(rows, columns)
   }
@@ -263,9 +268,7 @@ extension Matrix {
       */
       
       v.grid.withUnsafeBufferPointer { src in
-        grid.withUnsafeMutableBufferPointer { dst in
-          cblas_dcopy(Int32(columns), src.baseAddress, 1, dst.baseAddress! + r*columns, 1)
-        }
+        cblas_dcopy(Int32(columns), src.baseAddress, 1, &grid + r*columns, 1)
       }
     }
   }
@@ -353,9 +356,7 @@ extension Matrix {
       */
       
       v.grid.withUnsafeBufferPointer { src in
-        grid.withUnsafeMutableBufferPointer { dst in
-          cblas_dcopy(Int32(rows), src.baseAddress, 1, dst.baseAddress! + c, Int32(columns))
-        }
+        cblas_dcopy(Int32(rows), src.baseAddress, 1, &grid + c, Int32(columns))
       }
     }
   }
@@ -482,9 +483,7 @@ extension Matrix {
   public func transpose() -> Matrix {
     var results = Matrix(rows: columns, columns: rows, repeatedValue: 0)
     grid.withUnsafeBufferPointer { srcPtr in
-      results.grid.withUnsafeMutableBufferPointer { dstPtr in
-        vDSP_mtransD(srcPtr.baseAddress!, 1, dstPtr.baseAddress!, 1, vDSP_Length(results.rows), vDSP_Length(results.columns))
-      }
+      vDSP_mtransD(srcPtr.baseAddress!, 1, &results.grid, 1, vDSP_Length(results.rows), vDSP_Length(results.columns))
     }
     return results
   }
@@ -732,9 +731,7 @@ public func <*> (lhs: Matrix, rhs: Matrix) -> Matrix {
   var results = Matrix(rows: lhs.rows, columns: rhs.columns, repeatedValue: 0)
   lhs.grid.withUnsafeBufferPointer { lhsPtr in
     rhs.grid.withUnsafeBufferPointer { rhsPtr in
-      results.grid.withUnsafeMutableBufferPointer { resultsPtr in
-        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, Int32(lhs.rows), Int32(rhs.columns), Int32(lhs.columns), 1, lhsPtr.baseAddress, Int32(lhs.columns), rhsPtr.baseAddress, Int32(rhs.columns), 0, resultsPtr.baseAddress, Int32(results.columns))
-      }
+      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, Int32(lhs.rows), Int32(rhs.columns), Int32(lhs.columns), 1, lhsPtr.baseAddress, Int32(lhs.columns), rhsPtr.baseAddress, Int32(rhs.columns), 0, &results.grid, Int32(results.columns))
     }
   }
   return results
