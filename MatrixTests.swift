@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 
 class MatrixTests: XCTestCase {
-  func assertEqual(m1: Matrix, _ m2: Matrix) {
+  func assertEqual(_ m1: Matrix, _ m2: Matrix) {
     XCTAssertEqual(m1.rows, m2.rows)
     XCTAssertEqual(m1.columns, m2.columns)
     for r in 0..<m1.rows {
@@ -12,12 +12,12 @@ class MatrixTests: XCTestCase {
     }
   }
 
-  func assertEqual(m1: Matrix, _ m2: Matrix, accuracy epsilon: Double) {
+  func assertEqual(_ m1: Matrix, _ m2: Matrix, accuracy epsilon: Double) {
     XCTAssertEqual(m1.rows, m2.rows)
     XCTAssertEqual(m1.columns, m2.columns)
     for r in 0..<m1.rows {
       for c in 0..<m1.columns {
-        XCTAssertEqualWithAccuracy(m1[r, c], m2[r, c], accuracy: epsilon)
+        XCTAssertEqual(m1[r, c], m2[r, c], accuracy: epsilon)
       }
     }
   }
@@ -29,7 +29,7 @@ class MatrixTests: XCTestCase {
     to make sure that it doesn't modify the original array, only the copy.
     This helper function forces Swift to make a copy.
   */
-  func copy(m: Matrix) -> Matrix {
+  func copy(_ m: Matrix) -> Matrix {
     var q = m
     q[0,0] = m[0,0]  // force Swift to make a copy
     return q
@@ -418,10 +418,16 @@ extension MatrixTests {
   }
 
   func testToArray() {
-    let a = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]
+		let a:[[Double]] = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]
     let m = Matrix(a)
     XCTAssertEqual(m.array, a)
   }
+}
+
+extension Array: Equatable {
+	public static func ==(lhs: Array, rhs: Array) -> Bool {
+		return lhs as NSArray == rhs as NSArray
+	}
 }
 
 // MARK: - Operations
@@ -714,7 +720,7 @@ extension MatrixTests {
     assertEqual(a, A)
     assertEqual(b, B)
 
-    let d = Matrix([[10, 5], [10/3, 2.5], [2, 10/6]])
+    let d = Matrix([[10.0, 5], [10.0/3, 2.5], [2, 10.0/6]])
     assertEqual(10 / a, d, accuracy: 1e-10)
   }
 }
