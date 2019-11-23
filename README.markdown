@@ -134,6 +134,6 @@ See also [how NumPy stores its arrays internally](http://www.scipy-lectures.org/
 
 Based on @mattt's [Surge](https://github.com/mattt/Surge) library.
 
-Also check out this alternative matrix library for Swift: [swix](http://scottsievert.com/swix/)
+Also check out this alternative matrix library for Swift: [swix](https://github.com/stsievert/swix)
 
 MIT license
