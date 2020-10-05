@@ -64,7 +64,9 @@ extension Matrix {
 
     for (i, row) in data.enumerated() {
       row.withUnsafeBufferPointer { src in
-        cblas_dcopy(Int32(n), src.baseAddress! + range.lowerBound, 1, &grid + i*columns, 1)
+        grid.withUnsafeMutableBufferPointer{ gridPtr in
+            cblas_dcopy(Int32(n), src.baseAddress! + range.lowerBound, 1, gridPtr.baseAddress! + i*columns, 1)
+        }
       }
     }
   }
@@ -268,7 +270,9 @@ extension Matrix {
       */
       
       v.grid.withUnsafeBufferPointer { src in
-        cblas_dcopy(Int32(columns), src.baseAddress, 1, &grid + r*columns, 1)
+        grid.withUnsafeMutableBufferPointer{ gridPtr in
+            cblas_dcopy(Int32(columns), src.baseAddress, 1, gridPtr.baseAddress! + r*columns, 1)
+        }
       }
     }
   }
@@ -356,7 +360,9 @@ extension Matrix {
       */
       
       v.grid.withUnsafeBufferPointer { src in
-        cblas_dcopy(Int32(rows), src.baseAddress, 1, &grid + c, Int32(columns))
+        grid.withUnsafeMutableBufferPointer{ gridPtr in
+            cblas_dcopy(Int32(rows), src.baseAddress, 1, gridPtr.baseAddress! + c, Int32(columns))
+        }
       }
     }
   }
